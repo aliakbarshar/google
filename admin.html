@@ -51,7 +51,7 @@
             </button>
         </div>
 
-        <!-- ================= TAB 1: WORKER PROOF APPROVALS (PROPER ORIGINAL RECORDS) ================= -->
+        <!-- ================= TAB 1: WORKER PROOF APPROVALS ================= -->
         <section id="tab-content-approvals" class="space-y-4">
             <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
@@ -179,7 +179,7 @@
         });
     }
 
-    // ================= ORIGINAL WORKER PROOF SUBMISSIONS RECORD =================
+    // ================= WORKER PROOF SUBMISSIONS =================
 
     async function loadWorkerSubmissions() {
         const container = document.getElementById('submissions-list-container');
@@ -231,8 +231,8 @@
 
                     ${s.status === 'pending' ? `
                         <div class="flex gap-2 pt-2">
-                            <button onclick="updateSubmissionStatus(${s.id}, 'approved', ${s.user_id}, ${reward})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs">Approve & Pay PKR ${reward}</button>
-                            <button onclick="updateSubmissionStatus(${s.id}, 'rejected', ${s.user_id}, 0)" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-800 font-bold px-4 py-2 rounded-xl text-xs">Reject Proof</button>
+                            <button onclick="updateSubmissionStatus(${s.id}, 'approved', '${s.user_id}', ${reward})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs">Approve & Pay PKR ${reward}</button>
+                            <button onclick="updateSubmissionStatus(${s.id}, 'rejected', '${s.user_id}', 0)" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-800 font-bold px-4 py-2 rounded-xl text-xs">Reject Proof</button>
                         </div>
                     ` : ''}
                 </div>
@@ -241,17 +241,10 @@
     }
 
     async function updateSubmissionStatus(subId, newStatus, workerId, rewardAmt) {
-        const { error } = await _supabase.from('submissions')
-            .update({ status: newStatus })
-            .eq('id', subId);
-
-        if (error) {
-            alert("Status update error: " + error.message);
-            return;
-        }
+        const { error } = await _supabase.from('submissions').update({ status: newStatus }).eq('id', subId);
+        if (error) return alert("Status update error: " + error.message);
 
         if (newStatus === 'approved' && rewardAmt > 0) {
-            // Update worker wallet balance
             const { data: profile } = await _supabase.from('profiles').select('balance').eq('id', workerId).single();
             const curBal = profile ? (profile.balance || 0) : 0;
             await _supabase.from('profiles').update({ balance: curBal + rewardAmt }).eq('id', workerId);
@@ -261,14 +254,15 @@
         loadWorkerSubmissions();
     }
 
-    // ================= CLIENT ORDERS MANAGEMENT FUNCTIONS =================
+    // ================= RELIABLE CLIENT ORDERS LOADER (DIRECT QUERY) =================
 
     async function loadAdminClientOrders() {
         const container = document.getElementById('admin-client-orders-container');
         container.innerHTML = '<p class="text-xs text-slate-500">Fetching latest client requests...</p>';
 
+        // Fetch client orders directly without rigid relationship dependencies
         const { data: orders, error } = await _supabase.from('client_orders')
-            .select('*, profiles(email, raw_user_meta_data)')
+            .select('*')
             .order('created_at', { ascending: false });
 
         if (error) {
@@ -283,12 +277,21 @@
 
         container.innerHTML = '';
 
-        orders.forEach(ord => {
-            const clientEmail = ord.profiles?.email || 'Client Email';
-            const clientPhone = ord.profiles?.raw_user_meta_data?.phone || '';
-            const commentsCount = ord.comments_list ? ord.comments_list.length : 0;
-            const encodedWaMsg = encodeURIComponent(`Hello! Regarding your order for ${ord.quantity} ${ord.review_type} Reviews (${ord.stars_rating} Stars) on link: ${ord.google_maps_link}. Let us discuss pricing.`);
+        for (const ord of orders) {
+            // Fetch profile data independently to guarantee client email & phone show up
+            let clientEmail = 'Registered Client';
+            let clientPhone = '';
 
+            if (ord.client_id) {
+                const { data: prof } = await _supabase.from('profiles').select('email, raw_user_meta_data').eq('id', ord.client_id).single();
+                if (prof) {
+                    clientEmail = prof.email || 'Registered Client';
+                    clientPhone = prof.raw_user_meta_data?.phone || '';
+                }
+            }
+
+            const commentsCount = ord.comments_list ? ord.comments_list.length : 0;
+            const encodedWaMsg = encodeURIComponent(`Hello! Regarding your order for ${ord.quantity} ${ord.review_type} Reviews (${ord.stars_rating} Stars) on Google Maps link: ${ord.google_maps_link}. Let us discuss pricing.`);
             const waLink = clientPhone ? `https://wa.me/${clientPhone.replace(/[^0-9]/g, '')}?text=${encodedWaMsg}` : '#';
 
             container.innerHTML += `
@@ -298,7 +301,7 @@
                             <span class="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-lg ${ord.review_type === 'Positive' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-red-950 text-red-400 border border-red-800'}">
                                 ${ord.review_type} Review Request (${ord.stars_rating} ⭐)
                             </span>
-                            <h3 class="text-sm font-bold text-slate-200 mt-2">Client: <span class="text-emerald-400">${clientEmail}</span></h3>
+                            <h3 class="text-sm font-bold text-slate-200 mt-2">Client ID/Email: <span class="text-emerald-400">${clientEmail}</span></h3>
                         </div>
 
                         <div class="flex items-center gap-2">
@@ -339,12 +342,12 @@
                                 💬 Contact Client on WhatsApp (${clientPhone})
                             </a>
                         ` : `
-                            <span class="text-xs text-amber-400 bg-amber-950/40 p-2 rounded-lg border border-amber-800">No WhatsApp Number</span>
+                            <span class="text-xs text-amber-400 bg-amber-950/40 p-2 rounded-lg border border-amber-800">No Phone Number Attached</span>
                         `}
                     </div>
                 </div>
             `;
-        });
+        }
     }
 
     async function updateOrderStatus(orderId, newStatus) {
