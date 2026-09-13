@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Portal - Buy Google Reviews & Ratings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4">
+
+    <!-- Auth Modal for Client Login / Registration -->
+    <div id="client-auth-modal" class="fixed inset-0 bg-slate-950/90 flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl w-full max-w-md space-y-4">
+            <h2 class="text-xl font-bold text-emerald-400 text-center">⭐ Client Portal Access</h2>
+            <p class="text-xs text-slate-400 text-center">Login or Register to order custom Google Maps reviews for your business.</p>
+            
+            <div class="space-y-3">
+                <input type="email" id="client-email" placeholder="Business / Contact Email" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                <input type="password" id="client-pass" placeholder="Password" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                <input type="text" id="client-phone" placeholder="WhatsApp / Phone Number" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                
+                <div class="flex gap-2 pt-2">
+                    <button onclick="handleClientLogin()" class="w-1/2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs">Login</button>
+                    <button onclick="handleClientRegister()" class="w-1/2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl text-xs">Register</button>
+                </div>
+                <p id="auth-err" class="text-xs text-red-400 text-center hidden"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Client Dashboard -->
+    <div class="max-w-4xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <header class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+            <div>
+                <h1 class="font-bold text-emerald-400 text-lg">🚀 Client Campaign Center</h1>
+                <p id="client-info" class="text-xs text-slate-400">Loading profile...</p>
+            </div>
+            <button onclick="clientLogout()" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-700/50 px-3 py-1.5 rounded-lg text-xs font-bold">Logout 🔒</button>
+        </header>
+
+        <!-- Stats Overview Cards -->
+        <section class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+                <div>
+                    <p class="text-xs text-slate-400 font-bold">Total Orders Created</p>
+                    <h3 id="stat-total-orders" class="text-2xl font-black text-emerald-400">0</h3>
+                </div>
+                <div class="bg-emerald-950 text-emerald-400 p-3 rounded-xl font-bold text-lg">📦</div>
+            </div>
+            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+                <div>
+                    <p class="text-xs text-slate-400 font-bold">Successful Reviews</p>
+                    <h3 id="stat-successful-reviews" class="text-2xl font-black text-blue-400">0</h3>
+                </div>
+                <div class="bg-blue-950 text-blue-400 p-3 rounded-xl font-bold text-lg">✅</div>
+            </div>
+            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+                <div>
+                    <p class="text-xs text-slate-400 font-bold">Pending Discussions</p>
+                    <h3 id="stat-pending-orders" class="text-2xl font-black text-amber-400">0</h3>
+                </div>
+                <div class="bg-amber-950 text-amber-400 p-3 rounded-xl font-bold text-lg">💬</div>
+            </div>
+        </section>
+
+        <!-- Order Form Section -->
+        <section class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+            <h2 class="text-base font-bold text-emerald-400 border-b border-slate-700 pb-2">➕ Request New Review Campaign</h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Google Business Location Link *</label>
+                    <input type="url" id="ord-maps-link" placeholder="https://maps.google.com/..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Target Country for Profiles *</label>
+                    <select id="ord-country" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                        <option value="Pakistan">Pakistan 🇵🇰</option>
+                        <option value="United States">United States 🇺🇸</option>
+                        <option value="United Kingdom">United Kingdom 🇬🇧</option>
+                        <option value="United Arab Emirates">United Arab Emirates 🇦🇪</option>
+                        <option value="Saudi Arabia">Saudi Arabia 🇸🇦</option>
+                        <option value="Canada">Canada 🇨🇦</option>
+                        <option value="Global / Mixed">Global / Any Country</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Review Category *</label>
+                    <select id="ord-type" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                        <option value="Positive">Positive Reviews (5 Stars Recommend)</option>
+                        <option value="Negative">Negative / Critical Reviews</option>
+                        <option value="Neutral">Neutral Feedback</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Desired Rating Stars *</label>
+                    <select id="ord-stars" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                        <option value="5">⭐⭐⭐⭐⭐ (5 Stars)</option>
+                        <option value="4">⭐⭐⭐⭐ (4 Stars)</option>
+                        <option value="3">⭐⭐⭐ (3 Stars)</option>
+                        <option value="2">⭐⭐ (2 Stars)</option>
+                        <option value="1">⭐ (1 Star)</option>
+                    </select>
+                </div>
+
+                <div class="md:col-span-2">
+                    <label class="block text-xs text-slate-400 mb-1">Quantity of Reviews Needed *</label>
+                    <input type="number" id="ord-qty" min="1" max="1000" placeholder="e.g. 50" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                </div>
+            </div>
+
+            <!-- Custom 10 Comments Container -->
+            <div class="space-y-2 border-t border-slate-700 pt-4">
+                <div class="flex justify-between items-center">
+                    <label class="block text-xs text-emerald-400 font-bold">📝 Custom Comments Template (Up to 10 Draft Comments)</label>
+                    <span class="text-[10px] text-slate-400">Optional: Write custom text for workers to post</span>
+                </div>
+                <div id="comments-container" class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <!-- 10 Comment Input Boxes JS Dynamically Generated -->
+                </div>
+            </div>
+
+            <div class="bg-amber-950/40 border border-amber-800/50 p-3 rounded-xl text-xs text-amber-300">
+                ⚠️ <strong>Note on Pricing:</strong> Pricing per review is customized depending on target country and volume. After submitting this order, our Admin will contact you on WhatsApp/Phone to finalize rates & schedule.
+            </div>
+
+            <button onclick="submitClientOrder()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition">Submit Order & Request Rate Call 📞</button>
+        </section>
+
+        <!-- Live Orders Status & Reports -->
+        <section class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+            <h2 class="text-base font-bold text-emerald-400 border-b border-slate-700 pb-2">📊 Campaign Reports & Posted Reviews Data</h2>
+            <div id="client-orders-list" class="space-y-3">
+                <p class="text-xs text-slate-500">Loading campaign reports...</p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+    const SUPABASE_URL = 'https://zpglwxppgzdjirnvvlfg.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZ2x3eHBwZ3pkamlybnZ2bGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNzg1NTksImV4cCI6MjEwNDg1NDU1OX0.ZnQm9NqG4UMU7BNadusvKN0s8CU4Evkzxzk2iJckpO4';
+
+    let _supabase = null;
+    let currentUser = null;
+
+    function initClientPortal() {
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
+            _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            renderCommentInputs();
+            checkClientSession();
+        } else {
+            setTimeout(initClientPortal, 300);
+        }
+    }
+
+    function renderCommentInputs() {
+        const container = document.getElementById('comments-container');
+        container.innerHTML = '';
+        for (let i = 1; i <= 10; i++) {
+            container.innerHTML += `
+                <input type="text" id="comment-box-${i}" placeholder="Comment Sample #${i}" class="bg-slate-900 border border-slate-700 p-2 rounded-lg text-xs text-white outline-none focus:border-emerald-500">
+            `;
+        }
+    }
+
+    async function checkClientSession() {
+        const { data: { user } } = await _supabase.auth.getUser();
+        if (user) {
+            currentUser = user;
+            document.getElementById('client-auth-modal').classList.add('hidden');
+            document.getElementById('client-info').innerText = `Logged in as: ${user.email}`;
+            loadClientDashboard();
+        } else {
+            document.getElementById('client-auth-modal').classList.remove('hidden');
+        }
+    }
+
+    async function handleClientLogin() {
+        const email = document.getElementById('client-email').value.trim();
+        const password = document.getElementById('client-pass').value.trim();
+        const errBox = document.getElementById('auth-err');
+        errBox.classList.add('hidden');
+
+        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+            errBox.innerText = error.message;
+            errBox.classList.remove('hidden');
+        } else {
+            checkClientSession();
+        }
+    }
+
+    async function handleClientRegister() {
+        const email = document.getElementById('client-email').value.trim();
+        const password = document.getElementById('client-pass').value.trim();
+        const phone = document.getElementById('client-phone').value.trim();
+        const errBox = document.getElementById('auth-err');
+        errBox.classList.add('hidden');
+
+        if (!email || !password || !phone) {
+            errBox.innerText = "Email, password, and phone are required!";
+            errBox.classList.remove('hidden');
+            return;
+        }
+
+        const { data, error } = await _supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { phone, role: 'client' } }
+        });
+
+        if (error) {
+            errBox.innerText = error.message;
+            errBox.classList.remove('hidden');
+        } else {
+            alert("Account created successfully! Please login.");
+        }
+    }
+
+    async function clientLogout() {
+        await _supabase.auth.signOut();
+        location.reload();
+    }
+
+    async function submitClientOrder() {
+        const mapsLink = document.getElementById('ord-maps-link').value.trim();
+        const country = document.getElementById('ord-country').value;
+        const reviewType = document.getElementById('ord-type').value;
+        const stars = parseInt(document.getElementById('ord-stars').value);
+        const qty = parseInt(document.getElementById('ord-qty').value);
+
+        if (!mapsLink || !qty || qty <= 0) {
+            return alert("Please fill Google Business Link and required Quantity!");
+        }
+
+        // Collect 10 Draft Comments
+        const commentsArr = [];
+        for (let i = 1; i <= 10; i++) {
+            const txt = document.getElementById(`comment-box-${i}`).value.trim();
+            if (txt) commentsArr.push(txt);
+        }
+
+        const orderPayload = {
+            client_id: currentUser.id,
+            google_maps_link: mapsLink,
+            target_country: country,
+            review_type: reviewType,
+            stars_rating: stars,
+            quantity: qty,
+            comments_list: commentsArr,
+            status: 'Pending Contact'
+        };
+
+        const { error } = await _supabase.from('client_orders').insert([orderPayload]);
+
+        if (error) {
+            alert("Error submitting order: " + error.message);
+        } else {
+            alert("Order registered! Admin has been notified and will contact you shortly to finalize rate details.");
+            loadClientDashboard();
+        }
+    }
+
+    async function loadClientDashboard() {
+        if (!currentUser) return;
+
+        // Fetch Client Orders
+        const { data: orders } = await _supabase.from('client_orders')
+            .select('*')
+            .eq('client_id', currentUser.id)
+            .order('created_at', { ascending: false });
+
+        const ordersContainer = document.getElementById('client-orders-list');
+        ordersContainer.innerHTML = '';
+
+        let totalQty = 0;
+        let pendingCount = 0;
+
+        if (orders && orders.length > 0) {
+            document.getElementById('stat-total-orders').innerText = orders.length;
+
+            for (const ord of orders) {
+                if (ord.status === 'Pending Contact') pendingCount++;
+                totalQty += ord.quantity;
+
+                // Fetch Completed Review Evidence for this Order
+                const { data: completedSubs, count: successfulCount } = await _supabase.from('submissions')
+                    .select('*, profiles(email)', { count: 'exact' })
+                    .eq('client_order_id', ord.id)
+                    .eq('status', 'approved');
+
+                let subDetailsHtml = '';
+                if (completedSubs && completedSubs.length > 0) {
+                    subDetailsHtml = completedSubs.map(s => `
+                        <div class="bg-slate-950 p-2 rounded border border-slate-800 text-[11px] font-mono flex justify-between">
+                            <span>📧 Posted by Gmail: <strong class="text-emerald-400">${s.target_gmail || 'User Gmail'}</strong></span>
+                            <span class="text-slate-400">${new Date(s.created_at).toLocaleDateString()}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    subDetailsHtml = '<p class="text-[11px] text-slate-500">No completed posts logged yet.</p>';
+                }
+
+                ordersContainer.innerHTML += `
+                    <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-3">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800 pb-2">
+                            <div>
+                                <span class="text-xs font-bold text-emerald-400">${ord.review_type} Review Campaign (${ord.stars_rating} ★)</span>
+                                <p class="text-[11px] text-slate-400">Target Country: <strong>${ord.target_country}</strong> | Quantity: <strong>${ord.quantity}</strong></p>
+                            </div>
+                            <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg ${ord.status === 'Pending Contact' ? 'bg-amber-950 text-amber-400 border border-amber-800' : 'bg-emerald-950 text-emerald-400 border border-emerald-800'}">
+                                ${ord.status}
+                            </span>
+                        </div>
+
+                        <p class="text-xs text-blue-400 font-mono truncate">🔗 <a href="${ord.google_maps_link}" target="_blank" class="underline">${ord.google_maps_link}</a></p>
+
+                        <div class="bg-slate-950/60 p-3 rounded-lg space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-slate-300">Live Post Reports (${successfulCount || 0} / ${ord.quantity} Done)</span>
+                            </div>
+                            <div class="space-y-1">
+                                ${subDetailsHtml}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('stat-pending-orders').innerText = pendingCount;
+
+            // Calculate overall successful reviews count
+            const { count: overallSuccessful } = await _supabase.from('submissions')
+                .select('*', { count: 'exact', head: true })
+                .eq('status', 'approved');
+
+            document.getElementById('stat-successful-reviews').innerText = overallSuccessful || 0;
+
+        } else {
+            ordersContainer.innerHTML = '<p class="text-xs text-slate-500">No active review orders found. Submit your first campaign above!</p>';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => initClientPortal());
+    </script>
+</body>
+</html>
