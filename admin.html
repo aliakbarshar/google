@@ -12,10 +12,29 @@
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4">
 
     <div class="max-w-3xl mx-auto space-y-6">
+        <!-- Header -->
         <header class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
             <h1 class="font-bold text-emerald-400 text-base">⚡ Admin Control Panel</h1>
             <span id="admin-user" class="text-xs text-slate-400">Loading...</span>
         </header>
+
+        <!-- Stats Counter Section -->
+        <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+                <div>
+                    <p class="text-xs text-slate-400 font-bold">Total Registered Users</p>
+                    <h3 id="total-users-count" class="text-2xl font-black text-emerald-400">0</h3>
+                </div>
+                <div class="bg-emerald-950 text-emerald-400 p-3 rounded-xl font-bold text-lg">👥</div>
+            </div>
+            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+                <div>
+                    <p class="text-xs text-slate-400 font-bold">Pending Withdrawals</p>
+                    <h3 id="total-pending-wd-count" class="text-2xl font-black text-blue-400">0</h3>
+                </div>
+                <div class="bg-blue-950 text-blue-400 p-3 rounded-xl font-bold text-lg">💸</div>
+            </div>
+        </section>
 
         <!-- User Filter & Details Card -->
         <section class="bg-slate-800 p-4 rounded-2xl border border-slate-700 space-y-3">
@@ -79,8 +98,11 @@
     }
 
     async function loadAdminData() {
-        const { data: users } = await _supabase.from('profiles').select('*');
+        // Fetch All Users & Total Count
+        const { data: users, count } = await _supabase.from('profiles').select('*', { count: 'exact' });
         allUsers = users || [];
+
+        document.getElementById('total-users-count').innerText = count || allUsers.length || 0;
 
         const inspectSelect = document.getElementById('user-inspect-select');
         const taskSelect = document.getElementById('task-user-select');
@@ -124,15 +146,20 @@
         const { data: wds } = await _supabase.from('withdrawals').select('*, profiles(*)').eq('status', 'pending');
         const wdList = document.getElementById('admin-wd-list');
         wdList.innerHTML = '';
+        document.getElementById('total-pending-wd-count').innerText = wds ? wds.length : 0;
+
         if(wds && wds.length > 0) {
             wds.forEach(w => {
                 wdList.innerHTML += `
-                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-xs flex justify-between items-center">
+                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-xs flex justify-between items-center gap-2">
                         <div>
-                            <p class="font-bold text-white">${w.profiles?.full_name} - Rs. ${w.amount}</p>
-                            <p class="text-slate-400">${w.payment_method_details}</p>
+                            <p class="font-bold text-white">${w.profiles?.full_name || 'User'} - Rs. ${w.amount}</p>
+                            <p class="text-slate-400 text-[11px]">${w.payment_method_details}</p>
                         </div>
-                        <button onclick="approveWd(${w.id}, '${w.user_id}', ${w.amount})" class="bg-blue-600 text-white font-bold px-3 py-1.5 rounded-lg">Approve & Deduct</button>
+                        <div class="flex gap-2 shrink-0">
+                            <button onclick="approveWd(${w.id}, '${w.user_id}', ${w.amount})" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg">Approve & Deduct</button>
+                            <button onclick="rejectWd(${w.id})" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg">Reject ✕</button>
+                        </div>
                     </div>`;
             });
         } else wdList.innerHTML = '<p class="text-slate-500 text-xs">No pending withdrawal requests.</p>';
@@ -150,7 +177,6 @@
         const user = allUsers.find(u => u.id === uid);
         if(!user) return;
 
-        // Fetch completed tasks count for this user
         const { count } = await _supabase.from('submissions')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', uid)
@@ -241,6 +267,14 @@
         await _supabase.from('profiles').update({ balance: prof.balance - amount }).eq('id', userId);
 
         alert("Withdrawal approved and balance deducted successfully!");
+        loadAdminData();
+    }
+
+    async function rejectWd(wdId) {
+        if(!confirm("Are you sure you want to reject this withdrawal request?")) return;
+        await _supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', wdId);
+
+        alert("Withdrawal request rejected.");
         loadAdminData();
     }
 
