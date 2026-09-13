@@ -198,13 +198,12 @@
         });
     }
 
-    // Safe Submissions Loader (Error-Free Independent Fetching)
+    // Safe Submissions Loader
     async function loadWorkerSubmissions() {
         const container = document.getElementById('submissions-list-container');
         container.innerHTML = '<p class="text-xs text-slate-500">Loading submitted tasks...</p>';
 
         try {
-            // 1. Submissions ريڪارڊ حاصل ڪريو
             const { data: subs, error: subErr } = await _supabase
                 .from('submissions')
                 .select('*')
@@ -217,7 +216,6 @@
                 return;
             }
 
-            // 2. Tasks ۽ Profiles کي الڳ سان حاصل ڪريو تاڪي SQL Join ايرر نه اچي
             const taskIds = [...new Set(subs.map(s => s.task_id).filter(Boolean))];
             const userIds = [...new Set(subs.map(s => s.user_id).filter(Boolean))];
 
@@ -225,7 +223,7 @@
             let profilesMap = new Map();
 
             if (taskIds.length > 0) {
-                const { data: tasks } = await _supabase.from('tasks').select('id, title, reward').in('id', taskIds);
+                const { data: tasks } = await _supabase.from('tasks').select('*').in('id', taskIds);
                 if (tasks) tasks.forEach(t => tasksMap.set(t.id, t));
             }
 
@@ -234,7 +232,6 @@
                 if (profiles) profiles.forEach(p => profilesMap.set(p.id, p));
             }
 
-            // 3. Render Dashboard List
             container.innerHTML = '';
             subs.forEach(s => {
                 const task = tasksMap.get(s.task_id) || { title: 'Google Maps Task', reward: 0 };
@@ -245,8 +242,8 @@
                     <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3">
                         <div class="flex justify-between items-start border-b border-slate-700 pb-2">
                             <div>
-                                <h3 class="text-sm font-bold text-slate-200">${task.title}</h3>
-                                <p class="text-[11px] text-slate-400">User Email: <strong class="text-emerald-400 font-mono">${user.email}</strong> | Reward: <strong class="text-amber-400">PKR ${task.reward}</strong></p>
+                                <h3 class="text-sm font-bold text-slate-200">${task.title || 'Google Maps Task'}</h3>
+                                <p class="text-[11px] text-slate-400">User Email: <strong class="text-emerald-400 font-mono">${user.email}</strong> | Reward: <strong class="text-amber-400">PKR ${task.reward || 0}</strong></p>
                             </div>
                             <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg ${currentStatus === 'approved' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : currentStatus === 'rejected' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}">
                                 ${currentStatus.toUpperCase()}
@@ -266,7 +263,7 @@
 
                         ${currentStatus === 'pending' ? `
                             <div class="flex gap-2 pt-2">
-                                <button onclick="updateSubmissionStatus(${s.id}, 'approved', '${s.user_id}', ${task.reward})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Approve & Pay PKR ${task.reward} ✅</button>
+                                <button onclick="updateSubmissionStatus(${s.id}, 'approved', '${s.user_id}', ${task.reward || 0})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Approve & Pay PKR ${task.reward || 0} ✅</button>
                                 <button onclick="updateSubmissionStatus(${s.id}, 'rejected', '${s.user_id}', 0)" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-800 font-bold px-4 py-2 rounded-xl text-xs transition">Reject ❌</button>
                             </div>
                         ` : ''}
@@ -301,7 +298,7 @@
         }
     }
 
-    // Publish Task Function
+    // Publish Task Function with Safe Column Mapping
     async function publishWorkerTask() {
         const title = document.getElementById('task-title').value.trim();
         const reward = parseFloat(document.getElementById('task-reward').value);
@@ -317,17 +314,25 @@
 
         if (selectedOptions.includes('ALL') || selectedOptions.length === 0) {
             const { error } = await _supabase.from('tasks').insert([{
-                title, reward, link, description: desc, target_email: null
+                title: title,
+                reward: reward,
+                link: link,
+                description: desc,
+                target_email: null
             }]);
-            if (error) return alert("Error: " + error.message);
+            if (error) return alert("Publish Error: " + error.message);
             alert("Task published for ALL registered users! 🚀");
         } else {
             const rowsToInsert = selectedOptions.map(email => ({
-                title, reward, link, description: desc, target_email: email
+                title: title,
+                reward: reward,
+                link: link,
+                description: desc,
+                target_email: email
             }));
 
             const { error } = await _supabase.from('tasks').insert(rowsToInsert);
-            if (error) return alert("Error: " + error.message);
+            if (error) return alert("Publish Error: " + error.message);
             alert(`Task published for ${selectedOptions.length} selected users! 🚀`);
         }
 
