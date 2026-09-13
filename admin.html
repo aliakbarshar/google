@@ -9,76 +9,119 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-3 md:p-6">
+<body class="bg-slate-100 text-slate-800 min-h-screen p-3 md:p-6">
 
-    <div class="max-w-4xl mx-auto space-y-4">
+    <div class="max-w-2xl mx-auto space-y-4">
         <!-- Header -->
-        <header class="bg-slate-800 border border-slate-700 p-4 rounded-2xl shadow-lg flex justify-between items-center">
+        <header class="bg-slate-900 text-white p-4 rounded-2xl shadow-lg flex justify-between items-center">
             <div>
-                <h1 class="font-bold text-base text-white">Admin Dashboard</h1>
-                <p id="admin-email-display" class="text-xs text-slate-400">Loading...</p>
+                <h1 class="font-bold text-base">Admin Control Panel</h1>
+                <p id="admin-email" class="text-xs text-slate-400">Loading...</p>
             </div>
-            <button onclick="logoutAdmin()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded-xl font-bold">Sign Out</button>
+            <button onclick="logoutAdmin()" class="bg-red-600 text-white text-xs px-3 py-1.5 rounded-xl font-bold">Sign Out</button>
         </header>
 
-        <!-- Admin Auth Block -->
-        <div id="admin-auth-block" class="bg-slate-800 border border-slate-700 p-6 rounded-2xl shadow space-y-4 max-w-md mx-auto">
-            <h2 class="text-sm font-bold text-center text-slate-200">Admin Sign In</h2>
-            <form id="form-admin-login" onsubmit="event.preventDefault(); handleAdminLogin();" class="space-y-3">
-                <input type="email" id="admin-email" placeholder="Admin Email" required class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs outline-none text-white">
-                <input type="password" id="admin-pass" placeholder="Password" required class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs outline-none text-white">
-                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs">Login as Admin</button>
+        <!-- Admin Login -->
+        <div id="admin-auth-block" class="bg-white p-6 rounded-2xl border shadow space-y-4">
+            <h2 class="font-bold text-sm text-slate-700">Admin Sign In</h2>
+            <form onsubmit="event.preventDefault(); handleAdminLogin();" class="space-y-3">
+                <input type="email" id="admin-email-input" placeholder="Admin Email" required class="w-full border p-2.5 rounded-xl text-xs outline-none">
+                <input type="password" id="admin-pass-input" placeholder="Password" required class="w-full border p-2.5 rounded-xl text-xs outline-none">
+                <button type="submit" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs">Login</button>
             </form>
         </div>
 
-        <!-- Admin Main Dashboard -->
+        <!-- Admin Main Panel -->
         <div id="admin-main" class="hidden space-y-4">
             
             <!-- Navigation Tabs -->
-            <div class="grid grid-cols-3 bg-slate-800 border border-slate-700 p-1 rounded-2xl text-xs font-bold text-center gap-1">
-                <button onclick="switchAdminTab('tasks')" id="atab-tasks" class="py-2.5 rounded-xl bg-slate-700 text-white">Manage Tasks</button>
-                <button onclick="switchAdminTab('submissions')" id="atab-submissions" class="py-2.5 rounded-xl text-slate-400">Review Proofs</button>
-                <button onclick="switchAdminTab('withdrawals')" id="atab-withdrawals" class="py-2.5 rounded-xl text-slate-400">Withdrawals</button>
+            <div class="grid grid-cols-3 bg-white p-1 rounded-2xl border text-xs font-bold text-center">
+                <button onclick="switchAdminTab('tasks')" id="atab-tasks" class="py-2 rounded-xl bg-slate-900 text-white">Create & Submissions</button>
+                <button onclick="switchAdminTab('users')" id="atab-users" class="py-2 rounded-xl text-slate-500">Users & Gmails</button>
+                <button onclick="switchAdminTab('clients')" id="atab-clients" class="py-2 rounded-xl text-slate-500">Client Orders</button>
             </div>
 
-            <!-- TAB 1: MANAGE & CREATE TASKS (Original Simple Form) -->
+            <!-- TAB 1: CREATE TASKS & SUBMISSIONS -->
             <div id="asec-tasks" class="space-y-4">
-                <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl shadow space-y-3">
-                    <h3 class="font-bold text-xs text-slate-200">Create New Review Task</h3>
-                    <form onsubmit="event.preventDefault(); createNewTask();" class="space-y-3">
-                        <input type="url" id="t-maps" placeholder="Google Maps Link" required class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs outline-none text-white">
-                        <input type="number" id="t-reward" placeholder="Reward Amount (e.g. 20)" value="20" required class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs outline-none text-white">
-                        <textarea id="t-review" placeholder="Review Text to post..." rows="2" required class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs outline-none text-white"></textarea>
-                        <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs">Publish Task</button>
-                    </form>
-                </div>
-
-                <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl shadow space-y-3">
-                    <h3 class="font-bold text-xs text-slate-200">Active Tasks List</h3>
-                    <div id="admin-tasks-list" class="space-y-2">
-                        <p class="text-xs text-slate-400 text-center py-4">Loading tasks...</p>
+                <!-- Create Task -->
+                <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
+                    <h3 class="font-bold text-xs text-slate-700">Create New Review Task</h3>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-bold block mb-1">Select User:</label>
+                            <select id="task-user-select" onchange="onUserSelectedForTask()" class="w-full border p-2 rounded-xl text-xs outline-none bg-slate-50">
+                                <option value="">-- All Users (General Task) --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-bold block mb-1">Target Gmail (User's Registered):</label>
+                            <select id="task-target-gmail" class="w-full border p-2 rounded-xl text-xs outline-none bg-slate-50">
+                                <option value="">-- Select user first or type custom --</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- TAB 2: REVIEW SUBMISSIONS -->
-            <div id="asec-submissions" class="hidden space-y-3">
-                <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl shadow space-y-3">
-                    <h3 class="font-bold text-xs text-slate-200">User Submissions (Proofs)</h3>
+                    <div>
+                        <label class="text-[10px] text-slate-500 font-bold block mb-1">Google Maps Location Link:</label>
+                        <input type="url" id="new-task-map" placeholder="https://maps.app.goo.gl/..." class="w-full border p-2 rounded-xl text-xs outline-none">
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] text-slate-500 font-bold block mb-1">Box 1: Review Comment Text (User will copy this):</label>
+                        <textarea id="new-task-comment" rows="2" placeholder="Write review comment here..." class="w-full border p-2 rounded-xl text-xs outline-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] text-slate-500 font-bold block mb-1">Box 2: Admin Message / Instructions for User:</label>
+                        <textarea id="new-task-msg" rows="2" placeholder="Instructions e.g., complete before evening..." class="w-full border p-2 rounded-xl text-xs outline-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] text-slate-500 font-bold block mb-1">Reward (PKR):</label>
+                        <input type="number" id="new-task-reward" value="20" class="w-full border p-2 rounded-xl text-xs outline-none">
+                    </div>
+
+                    <button onclick="createNewTask()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-blue-700">Publish Task</button>
+                </div>
+
+                <!-- Submissions Review -->
+                <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
+                    <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
+                        <span>User Submissions (Pending Proofs)</span>
+                        <button onclick="loadAdminData()" class="text-[10px] text-blue-600 underline">Refresh</button>
+                    </h3>
                     <div id="admin-submissions-list" class="space-y-3">
                         <p class="text-xs text-slate-400 text-center py-4">Loading submissions...</p>
                     </div>
                 </div>
             </div>
 
-            <!-- TAB 3: WITHDRAWALS REQUESTS -->
-            <div id="asec-withdrawals" class="hidden space-y-3">
-                <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl shadow space-y-3">
-                    <h3 class="font-bold text-xs text-slate-200">User Withdrawal Requests</h3>
-                    <div id="admin-withdrawals-list" class="space-y-3">
-                        <p class="text-xs text-slate-400 text-center py-4">Loading withdrawals...</p>
-                    </div>
+            <!-- TAB 2: USERS & GMAIL ACCOUNTS -->
+            <div id="asec-users" class="hidden bg-white p-4 rounded-2xl border shadow space-y-3">
+                <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
+                    <span>All Registered Users & Their Gmails</span>
+                    <button onclick="loadAllUsers()" class="text-[10px] text-blue-600 underline">Refresh</button>
+                </h3>
+                <div id="admin-users-list" class="space-y-3">
+                    <p class="text-xs text-slate-400 text-center py-4">Loading users...</p>
                 </div>
+            </div>
+
+            <!-- TAB 3: CLIENT ORDERS -->
+            <div id="asec-clients" class="hidden bg-white p-4 rounded-2xl border shadow space-y-3">
+                <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
+                    <span>Client Review Orders Record</span>
+                    <button onclick="loadClientOrders()" class="text-[10px] text-blue-600 underline">Refresh</button>
+                </h3>
+                <div class="bg-slate-50 p-3 rounded-xl border space-y-2">
+                    <h4 class="font-bold text-[11px] text-slate-700">Add New Client Order</h4>
+                    <input type="text" id="client-name" placeholder="Client Name / Business Name" class="w-full border p-2 rounded-xl text-xs">
+                    <input type="url" id="client-map" placeholder="Google Maps Link" class="w-full border p-2 rounded-xl text-xs">
+                    <input type="number" id="client-reviews-count" placeholder="Number of Reviews Needed" class="w-full border p-2 rounded-xl text-xs">
+                    <button onclick="addClientOrder()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-xl text-xs">Save & Approve Client Order</button>
+                </div>
+                <div id="client-orders-list" class="space-y-2 pt-2"></div>
             </div>
 
         </div>
@@ -89,7 +132,7 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZ2x3eHBwZ3pkamlybnZ2bGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNzg1NTksImV4cCI6MjEwNDg1NDU1OX0.ZnQm9NqG4UMU7BNadusvKN0s8CU4Evkzxzk2iJckpO4';
     
     let _supabase = null;
-    let currentAdmin = null;
+    let allUsersCache = [];
 
     function initAdmin(retries = 5) {
         if (window.supabase && typeof window.supabase.createClient === 'function') {
@@ -99,8 +142,8 @@
     }
 
     async function handleAdminLogin() {
-        const email = document.getElementById('admin-email').value.trim();
-        const password = document.getElementById('admin-pass').value.trim();
+        const email = document.getElementById('admin-email-input').value.trim();
+        const password = document.getElementById('admin-pass-input').value.trim();
         const { error } = await _supabase.auth.signInWithPassword({ email, password });
         if(error) alert("Login error: " + error.message);
         else checkAdminSession();
@@ -109,197 +152,230 @@
     async function checkAdminSession() {
         const { data: { user } } = await _supabase.auth.getUser();
         if(user) {
-            currentAdmin = user;
             document.getElementById('admin-auth-block').classList.add('hidden');
             document.getElementById('admin-main').classList.remove('hidden');
-            document.getElementById('admin-email-display').innerText = user.email;
+            document.getElementById('admin-email').innerText = user.email;
             loadAdminData();
+            loadUsersDropdown();
         } else {
-            currentAdmin = null;
-            document.getElementById('admin-auth-block').classList.remove('hidden');
+            document.getElementById('admin-auth-block').classList.add('hidden');
             document.getElementById('admin-main').classList.add('hidden');
         }
     }
 
     function switchAdminTab(tab) {
-        ['tasks', 'submissions', 'withdrawals'].forEach(t => {
+        ['tasks', 'users', 'clients'].forEach(t => {
             document.getElementById(`asec-${t}`).classList.add('hidden');
-            document.getElementById(`atab-${t}`).className = "py-2.5 rounded-xl text-slate-400";
+            document.getElementById(`atab-${t}`).className = "py-2 rounded-xl text-slate-500";
         });
         document.getElementById(`asec-${tab}`).classList.remove('hidden');
-        document.getElementById(`atab-${tab}`).className = "py-2.5 rounded-xl bg-slate-700 text-white font-bold";
-        
-        if(tab === 'withdrawals') loadAdminWithdrawals();
-        if(tab === 'submissions') loadAdminSubmissions();
-        if(tab === 'tasks') loadAdminTasks();
+        document.getElementById(`atab-${tab}`).className = "py-2 rounded-xl bg-slate-900 text-white font-bold";
+
+        if(tab === 'users') loadAllUsers();
+        if(tab === 'clients') loadClientOrders();
     }
 
-    async function loadAdminData() {
-        loadAdminTasks();
-        loadAdminSubmissions();
-        loadAdminWithdrawals();
+    async function loadUsersDropdown() {
+        const { data: users } = await _supabase.from('profiles').select('*');
+        allUsersCache = users || [];
+        const select = document.getElementById('task-user-select');
+        select.innerHTML = '<option value="">-- All Users (General Task) --</option>';
+        if(users) {
+            users.forEach(u => {
+                select.innerHTML += `<option value="${u.id}">${u.full_name || u.email}</option>`;
+            });
+        }
+    }
+
+    function onUserSelectedForTask() {
+        const selectedUserId = document.getElementById('task-user-select').value;
+        const gmailSelect = document.getElementById('task-target-gmail');
+        gmailSelect.innerHTML = '<option value="">-- Select Target Gmail --</option>';
+
+        if(!selectedUserId) {
+            gmailSelect.innerHTML = '<option value="">All or any registered Gmail</option>';
+            return;
+        }
+
+        const userObj = allUsersCache.find(u => u.id === selectedUserId);
+        if(userObj && userObj.gmail_accounts && userObj.gmail_accounts.length > 0) {
+            userObj.gmail_accounts.forEach(g => {
+                gmailSelect.innerHTML += `<option value="${g}">${g}</option>`;
+            });
+        } else if(userObj && userObj.email) {
+            gmailSelect.innerHTML += `<option value="${userObj.email}">${userObj.email}</option>`;
+        }
     }
 
     async function createNewTask() {
-        const mapsLink = document.getElementById('t-maps').value.trim();
-        const reward = parseFloat(document.getElementById('t-reward').value);
-        const reviewText = document.getElementById('t-review').value.trim();
+        const selectedUserId = document.getElementById('task-user-select').value || null;
+        const targetGmail = document.getElementById('task-target-gmail').value.trim();
+        const mapsLink = document.getElementById('new-task-map').value.trim();
+        const reviewText = document.getElementById('new-task-comment').value.trim();
+        const adminMsg = document.getElementById('new-task-msg').value.trim();
+        const reward = parseFloat(document.getElementById('new-task-reward').value) || 20;
+
+        if(!mapsLink || !reviewText) return alert("Please fill Maps Link and Review Comment!");
 
         const { error } = await _supabase.from('tasks').insert([{
+            assigned_user_id: selectedUserId,
             google_maps_link: mapsLink,
-            reward: reward,
             review_text: reviewText,
+            admin_message: adminMsg,
+            target_gmail: targetGmail || null,
+            reward: reward,
             status: 'active'
         }]);
 
         if(!error) {
-            alert("Task created successfully!");
-            document.getElementById('t-maps').value = '';
-            document.getElementById('t-review').value = '';
-            loadAdminTasks();
+            alert("Task published successfully!");
+            document.getElementById('new-task-map').value = '';
+            document.getElementById('new-task-comment').value = '';
+            document.getElementById('new-task-msg').value = '';
+            document.getElementById('task-target-gmail').innerHTML = '<option value="">-- Select user first --</option>';
+            document.getElementById('task-user-select').value = '';
         } else alert("Error: " + error.message);
     }
 
-    async function loadAdminTasks() {
-        const container = document.getElementById('admin-tasks-list');
-        const { data: tasks, error } = await _supabase.from('tasks').select('*').order('id', { ascending: false });
-        if(error) return container.innerHTML = `<p class="text-xs text-red-400">Error: ${error.message}</p>`;
+    async function loadAdminData() {
+        const container = document.getElementById('admin-submissions-list');
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Loading...</p>';
 
-        if(tasks && tasks.length > 0) {
+        const { data: subs, error } = await _supabase.from('submissions')
+            .select('*, tasks(*), profiles:user_id(full_name, phone)')
+            .eq('status', 'pending')
+            .order('id', { ascending: false });
+
+        if(error) return container.innerHTML = `<p class="text-xs text-red-500">Error: ${error.message}</p>`;
+
+        if(subs && subs.length > 0) {
             let html = '';
-            tasks.forEach(t => {
+            subs.forEach(s => {
+                const userName = s.profiles?.full_name || 'User';
+                const userPhone = s.profiles?.phone || 'No Phone';
+                const taskComment = s.tasks?.review_text || 'No comment';
+                const taskMap = s.tasks?.google_maps_link || '#';
+
                 html += `
-                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 flex justify-between items-center text-xs">
-                        <div>
-                            <p class="font-bold text-slate-200">Task #${t.id} - <span class="text-emerald-400">Rs. ${t.reward}</span></p>
-                            <p class="text-[11px] text-slate-400 truncate max-w-xs">${t.review_text}</p>
+                    <div class="bg-slate-50 p-3 rounded-xl border space-y-2 text-xs">
+                        <div class="flex justify-between items-center font-bold text-slate-700">
+                            <span>👤 ${userName} (${userPhone})</span>
+                            <span class="text-blue-600">Task #${s.task_id}</span>
                         </div>
-                        <button onclick="deleteTask(${t.id})" class="bg-red-600/20 text-red-400 px-3 py-1.5 rounded-lg font-bold hover:bg-red-600 hover:text-white transition">Delete</button>
+                        <div class="bg-white p-2 rounded border space-y-1">
+                            <p class="text-[11px] text-slate-600"><strong>Comment:</strong> ${taskComment}</p>
+                            <a href="${taskMap}" target="_blank" class="text-blue-500 underline block text-[11px]">Open Maps Link ↗</a>
+                        </div>
+                        <div class="bg-emerald-50 p-2 rounded border border-emerald-200">
+                            <strong class="text-emerald-800 text-[10px] block">User Proof Link:</strong>
+                            <p class="font-mono text-emerald-900 select-all">${s.proof_link || 'No proof link'}</p>
+                        </div>
+                        <div class="flex gap-2 pt-1">
+                            <button onclick="approveSubmission(${s.id}, '${s.user_id}', ${s.tasks?.reward || 20})" class="w-1/2 bg-emerald-600 text-white py-1.5 rounded-lg font-bold">Approve & Pay</button>
+                            <button onclick="rejectSubmission(${s.id})" class="w-1/2 bg-red-600 text-white py-1.5 rounded-lg font-bold">Reject</button>
+                        </div>
                     </div>
                 `;
             });
             container.innerHTML = html;
-        } else {
-            container.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">No tasks found.</p>';
-        }
+        } else container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No pending submissions.</p>';
     }
 
-    async function deleteTask(id) {
-        if(!confirm("Are you sure you want to delete this task?")) return;
-        const { error } = await _supabase.from('tasks').delete().eq('id', id);
-        if(!error) loadAdminTasks();
-        else alert("Error: " + error.message);
-    }
+    async function loadAllUsers() {
+        const container = document.getElementById('admin-users-list');
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Loading users record...</p>';
 
-    async function loadAdminSubmissions() {
-        const container = document.getElementById('admin-submissions-list');
-        const { data: subs, error } = await _supabase.from('submissions').select('*, tasks(reward)').eq('status', 'pending').order('id', { ascending: false });
-        if(error) return container.innerHTML = `<p class="text-xs text-red-400">Error: ${error.message}</p>`;
+        const { data: users, error } = await _supabase.from('profiles').select('*').order('id', { ascending: false });
+        if(error) return container.innerHTML = `<p class="text-xs text-red-500">Error: ${error.message}</p>`;
 
-        if(subs && subs.length > 0) {
-            let html = '';
-            for(let s of subs) {
-                const { data: userProf } = await _supabase.from('profiles').select('full_name, email').eq('id', s.user_id).single();
-                const userName = userProf ? (userProf.full_name || userProf.email) : 'User';
-                const rewardAmount = s.tasks ? s.tasks.reward : 20;
-
+        if(users && users.length > 0) {
+            let html = `<p class="text-[11px] font-bold text-slate-500">Total Registered Users: ${users.length}</p>`;
+            users.forEach(u => {
+                const gmails = (u.gmail_accounts && u.gmail_accounts.length > 0) ? u.gmail_accounts.join(', ') : 'No Gmail added';
                 html += `
-                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-2 text-xs">
-                        <div class="flex justify-between items-center font-bold text-slate-200">
-                            <span>User: ${userName}</span>
-                            <span class="text-emerald-400">Reward: Rs. ${rewardAmount}</span>
+                    <div class="bg-slate-50 p-3 rounded-xl border space-y-1 text-xs">
+                        <div class="flex justify-between items-center font-bold text-slate-700">
+                            <span>👤 ${u.full_name || 'No Name'}</span>
+                            <span class="text-emerald-600">Balance: Rs. ${u.balance || 0}</span>
                         </div>
-                        <p class="text-[11px] text-slate-300"><strong>Proof Link:</strong> <a href="${s.proof_link}" target="_blank" class="text-blue-400 underline">${s.proof_link}</a></p>
-                        <div class="flex gap-2 pt-1">
-                            <button onclick="approveSubmission(${s.id}, '${s.user_id}', ${rewardAmount})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg">Approve & Pay</button>
-                            <button onclick="rejectSubmission(${s.id})" class="bg-red-600/20 text-red-400 font-bold px-3 py-1.5 rounded-lg hover:bg-red-600 hover:text-white">Reject</button>
-                        </div>
+                        <p class="text-[11px] text-slate-500"><strong>Email:</strong> ${u.email || 'N/A'} | <strong>Phone:</strong> ${u.phone || 'N/A'}</p>
+                        <p class="text-[11px] bg-white p-1.5 rounded border font-mono text-blue-600"><strong>Registered Gmails:</strong> ${gmails}</p>
                     </div>
                 `;
-            }
+            });
             container.innerHTML = html;
-        } else {
-            container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No pending submissions.</p>';
-        }
+        } else container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No users found.</p>';
     }
 
-    async function approveSubmission(subId, userId, reward) {
-        const { data: prof } = await _supabase.from('profiles').select('balance').eq('id', userId).single();
-        const currentBal = prof ? (prof.balance || 0) : 0;
-        const newBal = currentBal + reward;
+    async function addClientOrder() {
+        const name = document.getElementById('client-name').value.trim();
+        const map = document.getElementById('client-map').value.trim();
+        const count = parseInt(document.getElementById('client-reviews-count').value) || 1;
 
-        await _supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
-        const { error } = await _supabase.from('submissions').update({ status: 'approved' }).eq('id', subId);
+        if(!name || !map) return alert("Please enter client name and maps link!");
+
+        const { error } = await _supabase.from('client_orders').insert([{
+            client_name: name,
+            google_maps_link: map,
+            reviews_needed: count,
+            status: 'approved'
+        }]);
 
         if(!error) {
-            alert("Submission approved and amount added to user balance!");
-            loadAdminSubmissions();
+            alert("Client order added and approved successfully!");
+            document.getElementById('client-name').value = '';
+            document.getElementById('client-map').value = '';
+            document.getElementById('client-reviews-count').value = '';
+            loadClientOrders();
         } else alert("Error: " + error.message);
+    }
+
+    async function loadClientOrders() {
+        const container = document.getElementById('client-orders-list');
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">Loading client orders...</p>';
+
+        const { data: orders, error } = await _supabase.from('client_orders').select('*').order('id', { ascending: false });
+        if(error) return container.innerHTML = `<p class="text-xs text-red-500">Error: ${error.message}</p>`;
+
+        if(orders && orders.length > 0) {
+            let html = '';
+            orders.forEach(o => {
+                html += `
+                    <div class="bg-slate-50 p-2.5 rounded-xl border text-xs flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-slate-700">${o.client_name}</span>
+                            <p class="text-[10px] text-slate-400">Needed: ${o.reviews_needed} Reviews</p>
+                            <a href="${o.google_maps_link}" target="_blank" class="text-blue-500 underline text-[10px]">Maps Link ↗</a>
+                        </div>
+                        <span class="font-bold px-2 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-700">${o.status}</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else container.innerHTML = '<p class="text-[11px] text-slate-400 text-center">No client orders recorded yet.</p>';
+    }
+
+    async function approveSubmission(subId, userId, rewardAmount) {
+        const { error: subErr } = await _supabase.from('submissions').update({ status: 'approved' }).eq('id', subId);
+        if(subErr) return alert("Error: " + subErr.message);
+
+        const { data: prof } = await _supabase.from('profiles').select('balance').eq('id', userId).single();
+        const currentBal = prof ? (prof.balance || 0) : 0;
+        const newBal = currentBal + rewardAmount;
+
+        const { error: balErr } = await _supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
+        if(balErr) alert("Approved, but balance update failed: " + balErr.message);
+        else {
+            alert("Approved and reward added to user balance!");
+            loadAdminData();
+        }
     }
 
     async function rejectSubmission(subId) {
         const { error } = await _supabase.from('submissions').update({ status: 'rejected' }).eq('id', subId);
         if(!error) {
             alert("Submission rejected.");
-            loadAdminSubmissions();
-        } else alert("Error: " + error.message);
-    }
-
-    async function loadAdminWithdrawals() {
-        const container = document.getElementById('admin-withdrawals-list');
-        const { data: wList, error } = await _supabase.from('withdrawals').select('*').eq('status', 'pending').order('id', { ascending: false });
-        if(error) return container.innerHTML = `<p class="text-xs text-red-400">Error: ${error.message}</p>`;
-
-        if(wList && wList.length > 0) {
-            let html = '';
-            for(let w of wList) {
-                const { data: userProf } = await _supabase.from('profiles').select('full_name, email, balance').eq('id', w.user_id).single();
-                const userName = userProf ? (userProf.full_name || userProf.email) : 'User';
-                const userBal = userProf ? (userProf.balance || 0) : 0;
-
-                html += `
-                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 space-y-2 text-xs">
-                        <div class="flex justify-between items-center font-bold text-slate-200">
-                            <span>User: ${userName}</span>
-                            <span class="text-amber-400 font-black text-sm">Rs. ${w.amount}</span>
-                        </div>
-                        <div class="bg-slate-800 p-2 rounded border border-slate-700 space-y-1">
-                            <p class="text-[11px] text-slate-300"><strong>Method:</strong> ${w.method}</p>
-                            <p class="text-[11px] text-slate-300"><strong>Account Number:</strong> <span class="font-mono text-emerald-400">${w.account_number}</span></p>
-                        </div>
-                        <div class="flex gap-2 pt-1">
-                            <button onclick="approveWithdrawal(${w.id}, '${w.user_id}', ${w.amount}, ${userBal})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg">Mark Paid & Deduct</button>
-                            <button onclick="rejectWithdrawal(${w.id})" class="bg-red-600/20 text-red-400 font-bold px-3 py-1.5 rounded-lg hover:bg-red-600 hover:text-white">Reject</button>
-                        </div>
-                    </div>
-                `;
-            }
-            container.innerHTML = html;
-        } else {
-            container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No pending withdrawal requests.</p>';
-        }
-    }
-
-    async function approveWithdrawal(wId, userId, amount, currentBal) {
-        if(amount > currentBal) {
-            return alert("User doesn't have enough balance currently!");
-        }
-
-        const newBal = currentBal - amount;
-        await _supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
-        const { error } = await _supabase.from('withdrawals').update({ status: 'approved' }).eq('id', wId);
-
-        if(!error) {
-            alert("Withdrawal approved, amount deducted from user balance!");
-            loadAdminWithdrawals();
-        } else alert("Error: " + error.message);
-    }
-
-    async function rejectWithdrawal(wId) {
-        const { error } = await _supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', wId);
-        if(!error) {
-            alert("Withdrawal request rejected.");
-            loadAdminWithdrawals();
+            loadAdminData();
         } else alert("Error: " + error.message);
     }
 
