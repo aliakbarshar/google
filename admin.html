@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard & Client Order Manager</title>
+    <title>Platform Admin Control Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,7 +15,7 @@
     <div id="admin-auth-modal" class="fixed inset-0 bg-slate-950/95 flex items-center justify-center p-4 z-50">
         <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl w-full max-w-md space-y-4">
             <h2 class="text-xl font-bold text-emerald-400 text-center">🛡️ Admin Portal Sign-In</h2>
-            <p class="text-xs text-slate-400 text-center">Enter your Administrator credentials to manage orders & tasks.</p>
+            <p class="text-xs text-slate-400 text-center">Enter your Administrator credentials to access the panel.</p>
             
             <div class="space-y-3">
                 <input type="email" id="admin-email-input" placeholder="Admin Email" value="aliakbarshar@gmail.com" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
@@ -26,33 +26,48 @@
         </div>
     </div>
 
-    <!-- Main Admin Dashboard Area -->
+    <!-- Main Admin Area -->
     <div class="max-w-6xl mx-auto space-y-6">
         
         <!-- Top Bar -->
         <header class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
             <div>
                 <h1 class="font-bold text-emerald-400 text-xl">⚙️ Platform Admin Control Center</h1>
-                <p id="admin-status-lbl" class="text-xs text-slate-400">Status: Authenticating...</p>
+                <p id="admin-status-lbl" class="text-xs text-slate-400">Authenticating session...</p>
             </div>
             <button onclick="adminLogout()" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-700/50 px-3 py-1.5 rounded-lg text-xs font-bold">Logout 🔒</button>
         </header>
 
         <!-- Navigation Tabs -->
         <div class="flex gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
-            <button id="tab-btn-client-orders" onclick="switchAdminTab('client-orders')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500">
+            <button id="tab-btn-approvals" onclick="switchAdminTab('approvals')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500">
+                ✅ Worker Proof Approvals
+            </button>
+            <button id="tab-btn-client-orders" onclick="switchAdminTab('client-orders')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
                 💼 Client Orders Manager
             </button>
             <button id="tab-btn-tasks" onclick="switchAdminTab('tasks')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
-                📌 Worker Tasks Setup
-            </button>
-            <button id="tab-btn-approvals" onclick="switchAdminTab('approvals')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
-                ✅ Proof Approvals
+                📌 Create Worker Tasks
             </button>
         </div>
 
-        <!-- ================= TAB 1: CLIENT ORDERS MANAGER ================= -->
-        <section id="tab-content-client-orders" class="space-y-4">
+        <!-- ================= TAB 1: WORKER PROOF APPROVALS (PROPER ORIGINAL RECORDS) ================= -->
+        <section id="tab-content-approvals" class="space-y-4">
+            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+                <div>
+                    <h2 class="font-bold text-base text-emerald-400">🔍 Submissions & Proof Verification</h2>
+                    <p class="text-xs text-slate-400">Review proof submitted by workers to approve payouts.</p>
+                </div>
+                <button onclick="loadWorkerSubmissions()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ Refresh Submissions</button>
+            </div>
+
+            <div id="submissions-list-container" class="space-y-4">
+                <p class="text-xs text-slate-500">Loading worker proof submissions...</p>
+            </div>
+        </section>
+
+        <!-- ================= TAB 2: CLIENT ORDERS MANAGER ================= -->
+        <section id="tab-content-client-orders" class="hidden space-y-4">
             <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
                     <h2 class="font-bold text-base text-emerald-400">📩 Client Business Review Requests</h2>
@@ -61,45 +76,44 @@
                 <button onclick="loadAdminClientOrders()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ Refresh Orders</button>
             </div>
 
-            <!-- Client Orders List Grid -->
             <div id="admin-client-orders-container" class="space-y-4">
                 <p class="text-xs text-slate-500">Loading client orders...</p>
             </div>
         </section>
 
-        <!-- ================= TAB 2: WORKER TASKS SETUP ================= -->
+        <!-- ================= TAB 3: CREATE WORKER TASKS ================= -->
         <section id="tab-content-tasks" class="hidden space-y-4">
             <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
-                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">➕ Publish New Worker Task</h2>
+                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">➕ Create New Task for Workers</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="text" id="task-title" placeholder="Task Title (e.g., Leave 5-Star Review)" class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none">
-                    <input type="number" id="task-reward" placeholder="Reward per Review (PKR)" class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none">
-                    <input type="url" id="task-link" placeholder="Google Maps Link" class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none md:col-span-2">
-                    <textarea id="task-desc" placeholder="Instructions / Comments for Workers" class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none md:col-span-2 h-20"></textarea>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Task Title *</label>
+                        <input type="text" id="task-title" placeholder="e.g., Leave 5-Star Review for Hotel" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Reward Per Task (PKR) *</label>
+                        <input type="number" id="task-reward" placeholder="e.g., 50" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-slate-400 mb-1">Google Maps Target Link *</label>
+                        <input type="url" id="task-link" placeholder="https://maps.google.com/..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-slate-400 mb-1">Task Description & Specific Comments *</label>
+                        <textarea id="task-desc" placeholder="Write full instructions or comments workers should post..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 h-24"></textarea>
+                    </div>
                 </div>
-                <button onclick="publishWorkerTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs">Publish Task to Workers 🚀</button>
-            </div>
-        </section>
-
-        <!-- ================= TAB 3: PROOF APPROVALS ================= -->
-        <section id="tab-content-approvals" class="hidden space-y-4">
-            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
-                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">🔍 Review Worker Submissions</h2>
-                <div id="submissions-list" class="space-y-3">
-                    <p class="text-xs text-slate-500">Loading worker proof submissions...</p>
-                </div>
+                <button onclick="publishWorkerTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition">Publish Task to Worker Dashboard 🚀</button>
             </div>
         </section>
 
     </div>
 
-    <!-- Client Order Details Modal -->
+    <!-- Custom Comments Viewer Modal -->
     <div id="comments-modal" class="fixed inset-0 bg-slate-950/90 flex items-center justify-center p-4 z-50 hidden">
         <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl w-full max-w-lg space-y-4 max-h-[80vh] overflow-y-auto">
             <h3 class="font-bold text-emerald-400 text-base border-b border-slate-700 pb-2">📝 Client Drafted Comments</h3>
-            <div id="modal-comments-body" class="space-y-2 text-xs">
-                <!-- Comments dynamically rendered here -->
-            </div>
+            <div id="modal-comments-body" class="space-y-2 text-xs"></div>
             <button onclick="document.getElementById('comments-modal').classList.add('hidden')" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded-xl text-xs">Close</button>
         </div>
     </div>
@@ -124,6 +138,7 @@
         if (user && user.email === 'aliakbarshar@gmail.com') {
             document.getElementById('admin-auth-modal').classList.add('hidden');
             document.getElementById('admin-status-lbl').innerText = `Logged in: ${user.email}`;
+            loadWorkerSubmissions();
             loadAdminClientOrders();
         } else {
             document.getElementById('admin-auth-modal').classList.remove('hidden');
@@ -150,7 +165,7 @@
     }
 
     function switchAdminTab(tabName) {
-        const tabs = ['client-orders', 'tasks', 'approvals'];
+        const tabs = ['approvals', 'client-orders', 'tasks'];
         tabs.forEach(t => {
             const btn = document.getElementById(`tab-btn-${t}`);
             const content = document.getElementById(`tab-content-${t}`);
@@ -164,6 +179,88 @@
         });
     }
 
+    // ================= ORIGINAL WORKER PROOF SUBMISSIONS RECORD =================
+
+    async function loadWorkerSubmissions() {
+        const container = document.getElementById('submissions-list-container');
+        container.innerHTML = '<p class="text-xs text-slate-500">Loading worker proofs...</p>';
+
+        const { data: subs, error } = await _supabase.from('submissions')
+            .select('*, tasks(title, reward), profiles(email)')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            container.innerHTML = `<p class="text-xs text-red-400">Error fetching submissions: ${error.message}</p>`;
+            return;
+        }
+
+        if (!subs || subs.length === 0) {
+            container.innerHTML = '<p class="text-xs text-slate-500">No worker proof submissions found.</p>';
+            return;
+        }
+
+        container.innerHTML = '';
+
+        subs.forEach(s => {
+            const workerEmail = s.profiles?.email || 'Worker';
+            const taskTitle = s.tasks?.title || 'Review Task';
+            const reward = s.tasks?.reward || 0;
+
+            container.innerHTML += `
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3">
+                    <div class="flex justify-between items-start border-b border-slate-700 pb-2">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-200">${taskTitle}</h3>
+                            <p class="text-[11px] text-slate-400">Worker: <strong class="text-emerald-400">${workerEmail}</strong> | Reward: <strong class="text-amber-400">PKR ${reward}</strong></p>
+                        </div>
+                        <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg ${s.status === 'approved' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : s.status === 'rejected' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}">
+                            ${s.status.toUpperCase()}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                        <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-500 font-bold block">Posted Gmail:</span>
+                            <span class="text-white font-mono">${s.target_gmail || 'N/A'}</span>
+                        </div>
+                        <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-500 font-bold block">Proof Screenshot / Link:</span>
+                            ${s.proof_url ? `<a href="${s.proof_url}" target="_blank" class="text-blue-400 underline break-all">${s.proof_url}</a>` : '<span class="text-slate-500">No URL</span>'}
+                        </div>
+                    </div>
+
+                    ${s.status === 'pending' ? `
+                        <div class="flex gap-2 pt-2">
+                            <button onclick="updateSubmissionStatus(${s.id}, 'approved', ${s.user_id}, ${reward})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs">Approve & Pay PKR ${reward}</button>
+                            <button onclick="updateSubmissionStatus(${s.id}, 'rejected', ${s.user_id}, 0)" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-800 font-bold px-4 py-2 rounded-xl text-xs">Reject Proof</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
+    }
+
+    async function updateSubmissionStatus(subId, newStatus, workerId, rewardAmt) {
+        const { error } = await _supabase.from('submissions')
+            .update({ status: newStatus })
+            .eq('id', subId);
+
+        if (error) {
+            alert("Status update error: " + error.message);
+            return;
+        }
+
+        if (newStatus === 'approved' && rewardAmt > 0) {
+            // Update worker wallet balance
+            const { data: profile } = await _supabase.from('profiles').select('balance').eq('id', workerId).single();
+            const curBal = profile ? (profile.balance || 0) : 0;
+            await _supabase.from('profiles').update({ balance: curBal + rewardAmt }).eq('id', workerId);
+        }
+
+        alert(`Proof #${subId} set to ${newStatus}`);
+        loadWorkerSubmissions();
+    }
+
     // ================= CLIENT ORDERS MANAGEMENT FUNCTIONS =================
 
     async function loadAdminClientOrders() {
@@ -175,28 +272,27 @@
             .order('created_at', { ascending: false });
 
         if (error) {
-            container.innerHTML = `<p class="text-xs text-red-400">Failed to load orders: ${error.message}</p>`;
+            container.innerHTML = `<p class="text-xs text-red-400">Failed to load client orders: ${error.message}</p>`;
             return;
         }
 
         if (!orders || orders.length === 0) {
-            container.innerHTML = '<p class="text-xs text-slate-500">No client orders registered yet.</p>';
+            container.innerHTML = '<p class="text-xs text-slate-500">No client orders submitted yet.</p>';
             return;
         }
 
         container.innerHTML = '';
 
         orders.forEach(ord => {
-            const clientEmail = ord.profiles?.email || 'Unknown Email';
+            const clientEmail = ord.profiles?.email || 'Client Email';
             const clientPhone = ord.profiles?.raw_user_meta_data?.phone || '';
             const commentsCount = ord.comments_list ? ord.comments_list.length : 0;
-            const encodedWaMsg = encodeURIComponent(`Hello! Regarding your order for ${ord.quantity} ${ord.review_type} Reviews (${ord.stars_rating} Stars) on Google Maps link: ${ord.google_maps_link}. Let us discuss pricing and delivery schedule.`);
+            const encodedWaMsg = encodeURIComponent(`Hello! Regarding your order for ${ord.quantity} ${ord.review_type} Reviews (${ord.stars_rating} Stars) on link: ${ord.google_maps_link}. Let us discuss pricing.`);
 
             const waLink = clientPhone ? `https://wa.me/${clientPhone.replace(/[^0-9]/g, '')}?text=${encodedWaMsg}` : '#';
 
             container.innerHTML += `
                 <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-4">
-                    <!-- Header Bar -->
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-700 pb-3">
                         <div>
                             <span class="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-lg ${ord.review_type === 'Positive' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-red-950 text-red-400 border border-red-800'}">
@@ -205,7 +301,6 @@
                             <h3 class="text-sm font-bold text-slate-200 mt-2">Client: <span class="text-emerald-400">${clientEmail}</span></h3>
                         </div>
 
-                        <!-- Status Selector -->
                         <div class="flex items-center gap-2">
                             <label class="text-[11px] text-slate-400">Status:</label>
                             <select onchange="updateOrderStatus(${ord.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs text-white p-1.5 rounded-lg outline-none">
@@ -218,7 +313,6 @@
                         </div>
                     </div>
 
-                    <!-- Details Grid -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
                         <div>
                             <span class="text-slate-500 font-bold block">Target Country</span>
@@ -234,20 +328,18 @@
                         </div>
                     </div>
 
-                    <!-- Google Maps Link -->
                     <div class="text-xs">
-                        <span class="text-slate-400 font-bold">Google Maps Business Link:</span>
+                        <span class="text-slate-400 font-bold">Google Maps Link:</span>
                         <a href="${ord.google_maps_link}" target="_blank" class="text-blue-400 hover:underline break-all block mt-0.5">${ord.google_maps_link}</a>
                     </div>
 
-                    <!-- Action Buttons -->
                     <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-700/50">
                         ${clientPhone ? `
                             <a href="${waLink}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5">
                                 💬 Contact Client on WhatsApp (${clientPhone})
                             </a>
                         ` : `
-                            <span class="text-xs text-amber-400 bg-amber-950/40 p-2 rounded-lg border border-amber-800">No Phone number provided by client</span>
+                            <span class="text-xs text-amber-400 bg-amber-950/40 p-2 rounded-lg border border-amber-800">No WhatsApp Number</span>
                         `}
                     </div>
                 </div>
@@ -256,15 +348,9 @@
     }
 
     async function updateOrderStatus(orderId, newStatus) {
-        const { error } = await _supabase.from('client_orders')
-            .update({ status: newStatus })
-            .eq('id', orderId);
-
-        if (error) {
-            alert("Error updating order status: " + error.message);
-        } else {
-            alert(`Order #${orderId} status updated to: ${newStatus}`);
-        }
+        const { error } = await _supabase.from('client_orders').update({ status: newStatus }).eq('id', orderId);
+        if (error) alert("Error: " + error.message);
+        else alert("Status updated!");
     }
 
     async function viewCommentsModal(orderId) {
@@ -281,13 +367,37 @@
                 `;
             });
         } else {
-            modalBody.innerHTML = '<p class="text-slate-500">No custom comments provided by the client.</p>';
+            modalBody.innerHTML = '<p class="text-slate-500">No custom comments submitted.</p>';
         }
 
         document.getElementById('comments-modal').classList.remove('hidden');
     }
 
-    // Initialize Panel
+    // PUBLISH WORKER TASK
+    async function publishWorkerTask() {
+        const title = document.getElementById('task-title').value.trim();
+        const reward = parseFloat(document.getElementById('task-reward').value);
+        const link = document.getElementById('task-link').value.trim();
+        const desc = document.getElementById('task-desc').value.trim();
+
+        if (!title || !reward || !link) {
+            return alert("Fill in title, reward, and link!");
+        }
+
+        const { error } = await _supabase.from('tasks').insert([{
+            title, reward, link, description: desc
+        }]);
+
+        if (error) alert("Error publishing task: " + error.message);
+        else {
+            alert("Task published successfully!");
+            document.getElementById('task-title').value = '';
+            document.getElementById('task-reward').value = '';
+            document.getElementById('task-link').value = '';
+            document.getElementById('task-desc').value = '';
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', () => initAdminPortal());
     </script>
 </body>
