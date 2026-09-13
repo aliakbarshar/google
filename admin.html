@@ -44,13 +44,13 @@
         <!-- Navigation Tabs -->
         <div class="flex gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
             <button id="tab-btn-submissions" onclick="switchAdminTab('submissions')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500">
-                ✅ Task Submissions & Review Proofs
+                ✅ Completed Tasks & Proofs
             </button>
             <button id="tab-btn-create-task" onclick="switchAdminTab('create-task')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
-                ➕ Publish Task (All / Specific User)
+                ➕ Publish Task for User
             </button>
             <button id="tab-btn-users-list" onclick="switchAdminTab('users-list')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
-                👥 Registered Users & Gmails
+                👥 Users & Registered Gmails
             </button>
             <button id="tab-btn-client-orders" onclick="switchAdminTab('client-orders')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
                 💼 Client Orders
@@ -61,8 +61,8 @@
         <section id="tab-content-submissions" class="space-y-4">
             <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
                 <div>
-                    <h2 class="font-bold text-base text-emerald-400">🔍 Task Proofs Verification</h2>
-                    <p class="text-xs text-slate-400">Check user target Gmail, review comments, proof links, and approve/reject payouts.</p>
+                    <h2 class="font-bold text-base text-emerald-400">🔍 Task Submissions & Verification</h2>
+                    <p class="text-xs text-slate-400">Verify user screenshots, review Gmails, and approve/reject rewards.</p>
                 </div>
                 <button onclick="loadWorkerSubmissions()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ Refresh Submissions</button>
             </div>
@@ -72,10 +72,10 @@
             </div>
         </section>
 
-        <!-- ================= TAB 2: PUBLISH TASK FOR SPECIFIC OR ALL USERS ================= -->
+        <!-- ================= TAB 2: PUBLISH TASK WITH USER & GMAIL SELECTOR ================= -->
         <section id="tab-content-create-task" class="hidden space-y-4">
             <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
-                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">➕ Publish New Task for Workers</h2>
+                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">➕ Publish Task to Specific / All Users</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -87,11 +87,16 @@
                         <input type="number" id="task-reward" placeholder="e.g. 50" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
                     </div>
 
-                    <!-- Target Worker Specific Email Field -->
-                    <div class="md:col-span-2 bg-slate-900/80 p-3.5 rounded-xl border border-amber-500/40">
-                        <label class="block text-xs font-bold text-amber-400 mb-1">🎯 Target Worker Gmail (Optional)</label>
-                        <input type="email" id="task-target-email" placeholder="Leave blank for ALL users, OR enter worker email (e.g. worker@gmail.com)" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-amber-500">
-                        <p class="text-[11px] text-slate-400 mt-1.5">If left empty, all users will see this task. If specified, only this worker will see and perform it.</p>
+                    <!-- Target Specific User Gmail Select Dropdown -->
+                    <div class="md:col-span-2 bg-slate-900/90 p-4 rounded-xl border border-amber-500/50 space-y-2">
+                        <label class="block text-xs font-bold text-amber-400">🎯 Select Specific Target User / Gmail (Optional)</label>
+                        <div class="flex gap-2">
+                            <select id="task-target-email-select" class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-xl text-xs text-amber-300 outline-none focus:border-amber-500">
+                                <option value="">🌐 -- Send Task to ALL Registered Users --</option>
+                                <!-- User options loaded dynamically -->
+                            </select>
+                        </div>
+                        <p class="text-[11px] text-slate-400">Select a specific user email above to send this task ONLY to them. Leave as "ALL" to publish publicly.</p>
                     </div>
 
                     <div class="md:col-span-2">
@@ -100,19 +105,19 @@
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-xs text-slate-400 mb-1">Required Review Comment & Instructions *</label>
-                        <textarea id="task-desc" placeholder="Write exact review comment text or step-by-step guidelines..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 h-24"></textarea>
+                        <textarea id="task-desc" placeholder="Write exact comment text or guidelines for the worker..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 h-24"></textarea>
                     </div>
                 </div>
                 <button onclick="publishWorkerTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition">Publish Task 🚀</button>
             </div>
         </section>
 
-        <!-- ================= TAB 3: REGISTERED USERS & GMAIL LIST ================= -->
+        <!-- ================= TAB 3: REGISTERED USERS & THEIR REGISTERED GMAILS ================= -->
         <section id="tab-content-users-list" class="hidden space-y-4">
             <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
                 <div>
-                    <h2 class="font-bold text-base text-emerald-400">👥 Registered Users & Email Records</h2>
-                    <p class="text-xs text-slate-400">Complete list of registered workers/clients, their Gmails, and wallet balances.</p>
+                    <h2 class="font-bold text-base text-emerald-400">👥 Registered Users & Their Gmail Accounts</h2>
+                    <p class="text-xs text-slate-400">Complete record of registered users and all Gmail addresses saved in their profile.</p>
                 </div>
                 <button onclick="loadRegisteredUsers()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ Refresh Users</button>
             </div>
@@ -121,10 +126,10 @@
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-900 border-b border-slate-700 text-slate-400 text-xs">
-                            <th class="p-3">User ID</th>
-                            <th class="p-3">User Email (Gmail)</th>
-                            <th class="p-3">Wallet Balance (PKR)</th>
-                            <th class="p-3">Registration Date</th>
+                            <th class="p-3">User Primary Account</th>
+                            <th class="p-3">Registered Gmails List</th>
+                            <th class="p-3">Wallet Balance</th>
+                            <th class="p-3">Action</th>
                         </tr>
                     </thead>
                     <tbody id="users-table-body" class="divide-y divide-slate-700/50 text-xs">
@@ -156,6 +161,7 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZ2x3eHBwZ3pkamlybnZ2bGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNzg1NTksImV4cCI6MjEwNDg1NDU1OX0.ZnQm9NqG4UMU7BNadusvKN0s8CU4Evkzxzk2iJckpO4';
 
     let _supabase = null;
+    let _cachedUsers = [];
 
     function initAdminPortal() {
         if (window.supabase && typeof window.supabase.createClient === 'function') {
@@ -245,7 +251,7 @@
                     <div class="flex justify-between items-start border-b border-slate-700 pb-2">
                         <div>
                             <h3 class="text-sm font-bold text-slate-200">${taskTitle}</h3>
-                            <p class="text-[11px] text-slate-400">Account Email: <strong class="text-emerald-400 font-mono">${workerAccountEmail}</strong> | Reward: <strong class="text-amber-400">PKR ${reward}</strong></p>
+                            <p class="text-[11px] text-slate-400">User Account: <strong class="text-emerald-400 font-mono">${workerAccountEmail}</strong> | Reward: <strong class="text-amber-400">PKR ${reward}</strong></p>
                         </div>
                         <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg ${s.status === 'approved' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : s.status === 'rejected' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}">
                             ${s.status.toUpperCase()}
@@ -254,12 +260,12 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                         <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-                            <span class="text-slate-400 font-bold block mb-1">Gmail Used for Maps Review:</span>
-                            <span class="text-emerald-400 font-mono font-bold text-xs">${s.target_gmail || 'Not provided'}</span>
+                            <span class="text-slate-400 font-bold block mb-1">Gmail Used for Review:</span>
+                            <span class="text-emerald-400 font-mono font-bold text-xs">${s.target_gmail || 'Not specified'}</span>
                         </div>
                         <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-                            <span class="text-slate-400 font-bold block mb-1">Proof Link / Screenshot URL:</span>
-                            ${s.proof_url ? `<a href="${s.proof_url}" target="_blank" class="text-blue-400 underline break-all text-xs">${s.proof_url}</a>` : '<span class="text-slate-500">No URL provided</span>'}
+                            <span class="text-slate-400 font-bold block mb-1">Proof Link / Screenshot:</span>
+                            ${s.proof_url ? `<a href="${s.proof_url}" target="_blank" class="text-blue-400 underline break-all text-xs">${s.proof_url}</a>` : '<span class="text-slate-500">No URL</span>'}
                         </div>
                     </div>
 
@@ -284,17 +290,17 @@
             await _supabase.from('profiles').update({ balance: curBal + rewardAmt }).eq('id', workerId);
         }
 
-        alert(`Submission #${subId} successfully updated to ${newStatus}`);
+        alert(`Submission marked as ${newStatus}`);
         loadWorkerSubmissions();
         loadRegisteredUsers();
     }
 
-    // ================= 2. PUBLISH WORKER TASK =================
+    // ================= 2. PUBLISH WORKER TASK WITH TARGET USER SELECTOR =================
 
     async function publishWorkerTask() {
         const title = document.getElementById('task-title').value.trim();
         const reward = parseFloat(document.getElementById('task-reward').value);
-        const targetEmail = document.getElementById('task-target-email').value.trim();
+        const targetEmail = document.getElementById('task-target-email-select').value.trim();
         const link = document.getElementById('task-link').value.trim();
         const desc = document.getElementById('task-desc').value.trim();
 
@@ -315,21 +321,30 @@
         if (error) {
             alert("Failed to publish task: " + error.message);
         } else {
-            alert(targetEmail ? `Task published successfully for ${targetEmail}! 🚀` : "Task published successfully for ALL registered users! 🚀");
+            alert(targetEmail ? `Task successfully assigned to ${targetEmail}! 🚀` : "Task published to ALL registered users! 🚀");
             document.getElementById('task-title').value = '';
             document.getElementById('task-reward').value = '';
-            document.getElementById('task-target-email').value = '';
+            document.getElementById('task-target-email-select').value = '';
             document.getElementById('task-link').value = '';
             document.getElementById('task-desc').value = '';
             switchAdminTab('submissions');
         }
     }
 
-    // ================= 3. LOAD ALL REGISTERED USERS =================
+    // Direct Quick Assign Button Function
+    function assignTaskToSpecificUser(userEmail) {
+        switchAdminTab('create-task');
+        const selectBox = document.getElementById('task-target-email-select');
+        selectBox.value = userEmail;
+    }
+
+    // ================= 3. LOAD ALL REGISTERED USERS & THEIR GMAILS =================
 
     async function loadRegisteredUsers() {
         const tbody = document.getElementById('users-table-body');
-        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Loading registered user profiles...</td></tr>';
+        const selectDropdown = document.getElementById('task-target-email-select');
+        
+        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Loading user profiles & Gmail records...</td></tr>';
 
         const { data: users, error } = await _supabase.from('profiles').select('*').order('created_at', { ascending: false });
 
@@ -339,18 +354,39 @@
         }
 
         if (!users || users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">No registered users found in Database. Run Step 1 SQL script.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">No registered users found. Run Step 1 SQL script.</td></tr>';
             return;
         }
 
+        _cachedUsers = users;
         tbody.innerHTML = '';
+        
+        // Reset Dropdown
+        selectDropdown.innerHTML = '<option value="">🌐 -- Send Task to ALL Registered Users --</option>';
+
         users.forEach(u => {
+            const primaryEmail = u.email || 'No Email';
+            const userGmails = u.gmails && Array.isArray(u.gmails) && u.gmails.length > 0 ? u.gmails : [primaryEmail];
+            
+            // Build Gmail badges
+            let gmailsBadgesHtml = '';
+            userGmails.forEach(g => {
+                gmailsBadgesHtml += `<span class="inline-block bg-slate-900 text-emerald-400 border border-slate-700 px-2 py-1 rounded-lg text-[11px] font-mono mr-1 mb-1">📧 ${g}</span>`;
+                
+                // Add to Dropdown Select
+                selectDropdown.innerHTML += `<option value="${g}">${primaryEmail} (Gmail: ${g})</option>`;
+            });
+
             tbody.innerHTML += `
                 <tr class="hover:bg-slate-800/50">
-                    <td class="p-3 font-mono text-[10px] text-slate-400">${u.id}</td>
-                    <td class="p-3 font-mono font-bold text-emerald-400">${u.email || 'Registered User'}</td>
+                    <td class="p-3 font-mono font-bold text-slate-200">${primaryEmail}</td>
+                    <td class="p-3">${gmailsBadgesHtml}</td>
                     <td class="p-3 font-bold text-amber-400">PKR ${u.balance || 0}</td>
-                    <td class="p-3 text-slate-500">${u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A'}</td>
+                    <td class="p-3">
+                        <button onclick="assignTaskToSpecificUser('${primaryEmail}')" class="bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-600/50 px-2.5 py-1 rounded-lg text-[11px] font-bold">
+                            ➕ Send Task
+                        </button>
+                    </td>
                 </tr>
             `;
         });
