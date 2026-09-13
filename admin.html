@@ -72,26 +72,35 @@
             </div>
         </section>
 
-        <!-- ================= TAB 2: PUBLISH TASK FOR USERS ================= -->
+        <!-- ================= TAB 2: PUBLISH TASK FOR SPECIFIC OR ALL USERS ================= -->
         <section id="tab-content-create-task" class="hidden space-y-4">
             <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
-                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">➕ Publish New Task to User Dashboard</h2>
+                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">➕ Publish New Task for Worker</h2>
+                
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Task Title *</label>
-                        <input type="text" id="task-title" placeholder="e.g. Leave 5-Star Review on Google Maps" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                        <input type="text" id="task-title" placeholder="e.g. Leave 5-Star Review on Hotel Royal" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
                     </div>
                     <div>
                         <label class="block text-xs text-slate-400 mb-1">Worker Reward (PKR) *</label>
                         <input type="number" id="task-reward" placeholder="e.g. 50" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
                     </div>
+
+                    <!-- Target Worker Specific Email Field -->
+                    <div class="md:col-span-2 bg-slate-900/60 p-3 rounded-xl border border-slate-700/80">
+                        <label class="block text-xs font-bold text-amber-400 mb-1">🎯 Specific User Gmail (Optional)</label>
+                        <input type="email" id="task-target-email" placeholder="Leave empty for ALL users, OR type user email (e.g. worker@gmail.com)" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-amber-500">
+                        <p class="text-[11px] text-slate-400 mt-1">If left blank, this task will be visible to all registered workers. If filled, only that user will see it.</p>
+                    </div>
+
                     <div class="md:col-span-2">
                         <label class="block text-xs text-slate-400 mb-1">Target Google Maps Link *</label>
                         <input type="url" id="task-link" placeholder="https://maps.google.com/..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-xs text-slate-400 mb-1">Task Instructions / Required Comments *</label>
-                        <textarea id="task-desc" placeholder="Specify comment text or guidelines for workers..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 h-24"></textarea>
+                        <label class="block text-xs text-slate-400 mb-1">Required Review Comment & Instructions *</label>
+                        <textarea id="task-desc" placeholder="Write exact comment text or guidelines for worker..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 h-24"></textarea>
                     </div>
                 </div>
                 <button onclick="publishWorkerTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition">Publish Task 🚀</button>
@@ -280,11 +289,12 @@
         loadRegisteredUsers();
     }
 
-    // ================= 2. PUBLISH WORKER TASK =================
+    // ================= 2. PUBLISH WORKER TASK WITH SPECIFIC EMAIL OPTION =================
 
     async function publishWorkerTask() {
         const title = document.getElementById('task-title').value.trim();
         const reward = parseFloat(document.getElementById('task-reward').value);
+        const targetEmail = document.getElementById('task-target-email').value.trim();
         const link = document.getElementById('task-link').value.trim();
         const desc = document.getElementById('task-desc').value.trim();
 
@@ -292,28 +302,34 @@
             return alert("Please fill Title, Reward, and Map Link.");
         }
 
-        const { error } = await _supabase.from('tasks').insert([{
-            title, reward, link, description: desc
-        }]);
+        const taskData = {
+            title, 
+            reward, 
+            link, 
+            description: desc,
+            target_email: targetEmail || null
+        };
+
+        const { error } = await _supabase.from('tasks').insert([taskData]);
 
         if (error) alert("Failed to publish task: " + error.message);
         else {
-            alert("Task published successfully to users portal! 🚀");
+            alert(targetEmail ? `Task published successfully for ${targetEmail}! 🚀` : "Task published successfully for ALL users! 🚀");
             document.getElementById('task-title').value = '';
             document.getElementById('task-reward').value = '';
+            document.getElementById('task-target-email').value = '';
             document.getElementById('task-link').value = '';
             document.getElementById('task-desc').value = '';
             switchAdminTab('submissions');
         }
     }
 
-    // ================= 3. LOAD ALL REGISTERED USERS =================
+    // ================= 3. LOAD REGISTERED USERS =================
 
     async function loadRegisteredUsers() {
         const tbody = document.getElementById('users-table-body');
         tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Loading user accounts...</td></tr>';
 
-        // Direct fetch profiles table
         const { data: users, error } = await _supabase.from('profiles').select('*').order('created_at', { ascending: false });
 
         if (error) {
