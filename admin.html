@@ -1,384 +1,393 @@
 <!DOCTYPE html>
 <html lang="sd" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Complete Admin Panel - Users, Tasks & Clients</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts for Sindhi / Arabic typography -->
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
-  <style>
-    body { font-family: 'Noto Naskh Arabic', sans-serif; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Admin Control Center</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Google Fonts for Sindhi / Arabic -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Noto Naskh Arabic', sans-serif; } </style>
 </head>
-<body class="bg-slate-100 text-gray-800">
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4">
 
-  <div class="min-h-screen flex flex-col md:flex-row">
+    <!-- Admin Auth Login Modal -->
+    <div id="admin-auth-modal" class="fixed inset-0 bg-slate-950/95 flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl w-full max-w-md space-y-4">
+            <h2 class="text-xl font-bold text-emerald-400 text-center">🛡️ ايڊمن پينل لاگ ان</h2>
+            <p class="text-xs text-slate-400 text-center">پنهنجي ايڊمن اڪائونٽ سان سائن ان ڪريو</p>
+            
+            <div class="space-y-3">
+                <input type="email" id="admin-email-input" value="aliakbarshar@gmail.com" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 text-left" dir="ltr">
+                <input type="password" id="admin-pass-input" placeholder="Password" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 text-left" dir="ltr">
+                <button onclick="handleAdminLogin()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition">لاگ ان ڪريو 🔓</button>
+                <p id="admin-auth-err" class="text-xs text-red-400 text-center hidden"></p>
+            </div>
+        </div>
+    </div>
 
-    <!-- Sidebar Navigation -->
-    <aside class="w-full md:w-64 bg-slate-900 text-white flex-shrink-0 p-5 shadow-lg">
-      <div class="text-2xl font-bold mb-8 text-center border-b border-slate-700 pb-4 text-emerald-400">
-        ايڊمن ڪنٽرول پينل
-      </div>
-      <nav class="space-y-2">
-        <button onclick="switchTab('dashboard')" id="btn-dashboard" class="tab-btn w-full text-right px-4 py-3 rounded-lg bg-emerald-600 text-white font-medium transition">
-          📊 ڊئش بورڊ (Overview)
-        </button>
-        <button onclick="switchTab('tasks')" id="btn-tasks" class="tab-btn w-full text-right px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 font-medium transition">
-          ✅ ٽاسڪ اپروئل (Tasks)
-        </button>
-        <button onclick="switchTab('users')" id="btn-users" class="tab-btn w-full text-right px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 font-medium transition">
-          👥 يوزرس رڪارڊ (Users)
-        </button>
-        <button onclick="switchTab('clients')" id="btn-clients" class="tab-btn w-full text-right px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 font-medium transition">
-          💼 ڪلائنٽس رڪارڊ (Clients)
-        </button>
-      </nav>
-    </aside>
-
-    <!-- Main Content Area -->
-    <main class="flex-1 p-6 overflow-y-auto">
-
-      <!-- SECTION 1: DASHBOARD OVERVIEW -->
-      <section id="tab-dashboard" class="space-y-6">
-        <h1 class="text-2xl font-bold text-gray-800 border-b pb-3">سسٽم جو خلاصو</h1>
+    <!-- Main Dashboard Container -->
+    <div class="max-w-7xl mx-auto space-y-6">
         
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-            <p class="text-sm font-semibold text-gray-500">پينڊنگ ٽاسڪ</p>
-            <p class="text-3xl font-bold text-amber-500 mt-2" id="stat-pending-tasks">0</p>
-          </div>
-          <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-            <p class="text-sm font-semibold text-gray-500">اپروو ٿيل ٽاسڪ</p>
-            <p class="text-3xl font-bold text-emerald-600 mt-2" id="stat-approved-tasks">0</p>
-          </div>
-          <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-            <p class="text-sm font-semibold text-gray-500">ڪل يوزرس</p>
-            <p class="text-3xl font-bold text-blue-600 mt-2" id="stat-total-users">0</p>
-          </div>
-          <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-200">
-            <p class="text-sm font-semibold text-gray-500">ڪل ڪلائنٽس</p>
-            <p class="text-3xl font-bold text-purple-600 mt-2" id="stat-total-clients">0</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- SECTION 2: TASKS APPROVAL / REJECT PANEL -->
-      <section id="tab-tasks" class="space-y-6 hidden">
-        <div class="flex justify-between items-center border-b pb-3">
-          <h1 class="text-2xl font-bold text-gray-800">ٽاسڪ منظوري ۽ رد پينل (Approval & Rejection)</h1>
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
-          <table class="w-full text-right border-collapse">
-            <thead>
-              <tr class="bg-slate-50 border-b border-gray-200 text-gray-600 text-sm">
-                <th class="p-4">ID</th>
-                <th class="p-4">ٽاسڪ عنوان</th>
-                <th class="p-4">يوزر / ڪلائنٽ</th>
-                <th class="p-4">تاريخ</th>
-                <th class="p-4">اسٽيٽس</th>
-                <th class="p-4 text-center">عمل (Action)</th>
-              </tr>
-            </thead>
-            <tbody id="tasks-table-body" class="divide-y divide-gray-100 text-sm">
-              <!-- Tasks Injected by JS -->
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- SECTION 3: USERS RECORD PANEL -->
-      <section id="tab-users" class="space-y-6 hidden">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-3">
-          <h1 class="text-2xl font-bold text-gray-800">رجسٽرڊ يوزرس جو رڪارڊ</h1>
-          <button onclick="toggleForm('user-form-card')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition">
-            + نئون يوزر شامل ڪريو
-          </button>
-        </div>
-
-        <!-- Add User Form -->
-        <div id="user-form-card" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hidden">
-          <h2 class="text-lg font-bold mb-4 text-gray-700">نئين يوزر جو فارم</h2>
-          <form onsubmit="addUser(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Header -->
+        <header class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
             <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">نام</label>
-              <input type="text" id="user-name" required placeholder="يوزر جو نالو" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                <h1 class="font-bold text-emerald-400 text-xl">⚙️ ايڊمن ڪنٽرول سينٽر</h1>
+                <p id="admin-status-lbl" class="text-xs text-slate-400">لاگ ان جي تصديق ٿي رهي آهي...</p>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">اي ميل</label>
-              <input type="email" id="user-email" required placeholder="user@example.com" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">عھدو (Role)</label>
-              <select id="user-role" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                <option value="User">User</option>
-                <option value="Admin">Admin</option>
-                <option value="Editor">Editor</option>
-              </select>
-            </div>
-            <div class="md:col-span-3 flex justify-end gap-2 mt-2">
-              <button type="button" onclick="toggleForm('user-form-card')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">منسوخ</button>
-              <button type="submit" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">سيو ڪريو</button>
-            </div>
-          </form>
+            <button onclick="adminLogout()" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-700/50 px-3 py-1.5 rounded-lg text-xs font-bold">لاگ آئوٽ 🔒</button>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="flex gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
+            <button id="tab-btn-submissions" onclick="switchAdminTab('submissions')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500">
+                ✅ يوزر جا مڪمل ٿيل ٽاسڪ (Proofs Review)
+            </button>
+            <button id="tab-btn-create-task" onclick="switchAdminTab('create-task')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
+                ➕ يوزر ڏانهن ٽاسڪ موڪليو (Create Task)
+            </button>
+            <button id="tab-btn-users-list" onclick="switchAdminTab('users-list')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
+                👥 رجسٽرڊ يوزرس ۽ Gmail لسٽ
+            </button>
+            <button id="tab-btn-client-orders" onclick="switchAdminTab('client-orders')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
+                💼 ڪلائنٽ آرڊرس (Client Orders)
+            </button>
         </div>
 
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-          <input type="text" id="user-search" onkeyup="filterUsers()" placeholder="يوزر سرچ ڪريو..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-        </div>
-
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
-          <table class="w-full text-right border-collapse">
-            <thead>
-              <tr class="bg-slate-50 border-b border-gray-200 text-gray-600 text-sm">
-                <th class="p-4">ID</th>
-                <th class="p-4">نام</th>
-                <th class="p-4">اي ميل</th>
-                <th class="p-4">رول</th>
-                <th class="p-4">اسٽيٽس</th>
-                <th class="p-4 text-center">عمل</th>
-              </tr>
-            </thead>
-            <tbody id="users-table-body" class="divide-y divide-gray-100 text-sm">
-              <!-- Users Injected by JS -->
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      <!-- SECTION 4: CLIENTS RECORD PANEL -->
-      <section id="tab-clients" class="space-y-6 hidden">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-3">
-          <h1 class="text-2xl font-bold text-gray-800">ڪلائنٽس جو رڪارڊ</h1>
-          <button onclick="toggleForm('client-form-card')" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition">
-            + نئون ڪلائنٽ شامل ڪريو
-          </button>
-        </div>
-
-        <!-- Add Client Form -->
-        <div id="client-form-card" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hidden">
-          <h2 class="text-lg font-bold mb-4 text-gray-700">نئين ڪلائنٽ جو فارم</h2>
-          <form onsubmit="addClient(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">ڪلائنٽ / ڪمپني نام</label>
-              <input type="text" id="client-name" required placeholder="ڪمپني يا ڪلائنٽ نالو" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+        <!-- ================= TAB 1: WORKER PROOFS & COMPLETED TASKS ================= -->
+        <section id="tab-content-submissions" class="space-y-4">
+            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+                <div>
+                    <h2 class="font-bold text-base text-emerald-400">🔍 يوزر پاران پورا ڪيل ٽاسڪ ۽ ثبوت</h2>
+                    <p class="text-xs text-slate-400">هتي يوزر پاران جمع ٿيل Gmail، ٽاسڪ لنڪ ۽ تصويري ثبوت چيڪ ڪري جائزي کانپوءِ رقم اپروو ڪريو.</p>
+                </div>
+                <button onclick="loadWorkerSubmissions()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ ريفريش</button>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">رابطو (Phone/Email)</label>
-              <input type="text" id="client-contact" required placeholder="فون يا اي ميل" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+
+            <div id="submissions-list-container" class="space-y-4">
+                <p class="text-xs text-slate-500">ڊيٽا لوڊ ٿي رهي آهي...</p>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-600 mb-1">پروجيڪٽ</label>
-              <input type="text" id="client-project" required placeholder="پروجيڪٽ نالو" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </section>
+
+        <!-- ================= TAB 2: CREATE & PUBLISH TASK FOR USERS ================= -->
+        <section id="tab-content-create-task" class="hidden space-y-4">
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">➕ يوزرس لاءِ نئون ٽاسڪ جاري ڪريو</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">ٽاسڪ جو عنوان (Task Title) *</label>
+                        <input type="text" id="task-title" placeholder="مثال: Google Maps تي 5-Star Review ڏيو" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">يوزر جو انعام / ريوارڊ (PKR) *</label>
+                        <input type="number" id="task-reward" placeholder="مثال: 50" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-slate-400 mb-1">گوگل مئپ يا مطلوبہ حدف جو لنڪ (Target Link) *</label>
+                        <input type="url" id="task-link" placeholder="https://maps.google.com/..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 text-left" dir="ltr">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-slate-400 mb-1">يوزر لاءِ ھدايتون / خاص ڪمنٽس (Task Instructions) *</label>
+                        <textarea id="task-desc" placeholder="يوزر کي ڪهڙو تبصرو (Comment) لکڻو آهي، انجون پوريون هدايتون لکو..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 h-24"></textarea>
+                    </div>
+                </div>
+                <button onclick="publishWorkerTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition">يوزر پينل تي ٽاسڪ موڪليو 🚀</button>
             </div>
-            <div class="md:col-span-3 flex justify-end gap-2 mt-2">
-              <button type="button" onclick="toggleForm('client-form-card')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg">منسوخ</button>
-              <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">سيو ڪريو</button>
+        </section>
+
+        <!-- ================= TAB 3: REGISTERED USERS & GMAIL LIST ================= -->
+        <section id="tab-content-users-list" class="hidden space-y-4">
+            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+                <div>
+                    <h2 class="font-bold text-base text-emerald-400">👥 رجسٽرڊ يوزرس ۽ Gmail لسٽ</h2>
+                    <p class="text-xs text-slate-400">سسٽم ۾ رجسٽرڊ ٿيل سڀني يوزرس جون Gmails ۽ سندن والٽ بيلنس.</p>
+                </div>
+                <button onclick="loadRegisteredUsers()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ ريفريش يوزرس</button>
             </div>
-          </form>
-        </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
-          <table class="w-full text-right border-collapse">
-            <thead>
-              <tr class="bg-slate-50 border-b border-gray-200 text-gray-600 text-sm">
-                <th class="p-4">ID</th>
-                <th class="p-4">ڪلائنٽ نام</th>
-                <th class="p-4">رابطو</th>
-                <th class="p-4">پروجيڪٽ</th>
-                <th class="p-4">اسٽيٽس</th>
-                <th class="p-4 text-center">عمل</th>
-              </tr>
-            </thead>
-            <tbody id="clients-table-body" class="divide-y divide-gray-100 text-sm">
-              <!-- Clients Injected by JS -->
-            </tbody>
-          </table>
-        </div>
-      </section>
+            <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-x-auto">
+                <table class="w-full text-right border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900 border-b border-slate-700 text-slate-400 text-xs">
+                            <th class="p-3">User ID</th>
+                            <th class="p-3">يوزر Gmail</th>
+                            <th class="p-3">موجودھ بيلنس (PKR)</th>
+                            <th class="p-3">رجسٽريشن تاريخ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body" class="divide-y divide-slate-700/50 text-xs">
+                        <!-- Loaded dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-    </main>
-  </div>
+        <!-- ================= TAB 4: CLIENT ORDERS MANAGER ================= -->
+        <section id="tab-content-client-orders" class="hidden space-y-4">
+            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+                <div>
+                    <h2 class="font-bold text-base text-emerald-400">💼 ڪلائنٽس جون ريڪوئسٽون</h2>
+                    <p class="text-xs text-slate-400">ڪلائنٽس پاران ڏنل آرڊر چيڪ ڪريو ۽ WhatsApp تي رابطو ڪريو.</p>
+                </div>
+                <button onclick="loadAdminClientOrders()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ ريفريش</button>
+            </div>
 
-  <script>
-    // Sample Initial Data
-    let tasks = [
-      { id: 101, title: 'ويب سائيٽ ريڊيزائن ٽاسڪ', user: 'علي اڪبر', date: '2026-09-12', status: 'Pending' },
-      { id: 102, title: 'ڊيٽابيس اپڊيٽ Supabase', user: 'احمد خان', date: '2026-09-11', status: 'Approved' },
-      { id: 103, title: 'لوگو ڊيزائين پيڪيج', user: 'حسن علي', date: '2026-09-10', status: 'Rejected' }
-    ];
+            <div id="admin-client-orders-container" class="space-y-4">
+                <p class="text-xs text-slate-500">لوڊ ٿي رهيو آهي...</p>
+            </div>
+        </section>
 
-    let users = [
-      { id: 1, name: 'علي اڪبر', email: 'aliakbarshar@gmail.com', role: 'Admin', status: 'Active' },
-      { id: 2, name: 'احمد خان', email: 'ahmed@example.com', role: 'User', status: 'Active' },
-      { id: 3, name: 'حسن علي', email: 'hasan@example.com', role: 'Editor', status: 'Inactive' }
-    ];
+    </div>
 
-    let clients = [
-      { id: 1, name: 'Hasnain Communication', contact: '0300-1234567', project: 'Telecom Services', status: 'Active' },
-      { id: 2, name: 'Daharki News Media', contact: 'info@daharki.com', project: 'News Portal', status: 'Active' }
-    ];
+    <script>
+    const SUPABASE_URL = 'https://zpglwxppgzdjirnvvlfg.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZ2x3eHBwZ3pkamlybnZ2bGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNzg1NTksImV4cCI6MjEwNDg1NDU1OX0.ZnQm9NqG4UMU7BNadusvKN0s8CU4Evkzxzk2iJckpO4';
 
-    // Tab Navigation
-    function switchTab(tabName) {
-      ['dashboard', 'tasks', 'users', 'clients'].forEach(tab => {
-        document.getElementById(`tab-${tab}`).classList.add('hidden');
-        document.getElementById(`btn-${tab}`).className = 'tab-btn w-full text-right px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-800 font-medium transition';
-      });
+    let _supabase = null;
 
-      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-      document.getElementById(`btn-${tabName}`).className = 'tab-btn w-full text-right px-4 py-3 rounded-lg bg-emerald-600 text-white font-medium transition';
+    function initAdminPortal() {
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
+            _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            checkAdminSession();
+        } else {
+            setTimeout(initAdminPortal, 300);
+        }
     }
 
-    // Toggle Visibility of Forms
-    function toggleForm(id) {
-      document.getElementById(id).classList.toggle('hidden');
+    async function checkAdminSession() {
+        const { data: { user } } = await _supabase.auth.getUser();
+        if (user && user.email === 'aliakbarshar@gmail.com') {
+            document.getElementById('admin-auth-modal').classList.add('hidden');
+            document.getElementById('admin-status-lbl').innerText = `Logged in: ${user.email}`;
+            loadWorkerSubmissions();
+            loadRegisteredUsers();
+            loadAdminClientOrders();
+        } else {
+            document.getElementById('admin-auth-modal').classList.remove('hidden');
+        }
     }
 
-    // Render Tasks Table
-    function renderTasks() {
-      const tbody = document.getElementById('tasks-table-body');
-      tbody.innerHTML = '';
+    async function handleAdminLogin() {
+        const email = document.getElementById('admin-email-input').value.trim();
+        const password = document.getElementById('admin-pass-input').value.trim();
+        const errBox = document.getElementById('admin-auth-err');
 
-      tasks.forEach(task => {
-        let statusBadge = '';
-        if(task.status === 'Approved') statusBadge = '<span class="px-2 py-1 rounded text-xs bg-green-100 text-green-700 font-semibold">Approved</span>';
-        else if(task.status === 'Rejected') statusBadge = '<span class="px-2 py-1 rounded text-xs bg-red-100 text-red-700 font-semibold">Rejected</span>';
-        else statusBadge = '<span class="px-2 py-1 rounded text-xs bg-amber-100 text-amber-700 font-semibold">Pending</span>';
-
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50 transition';
-        tr.innerHTML = `
-          <td class="p-4 font-mono">#${task.id}</td>
-          <td class="p-4 font-semibold text-gray-800">${task.title}</td>
-          <td class="p-4 text-gray-600">${task.user}</td>
-          <td class="p-4 text-gray-500">${task.date}</td>
-          <td class="p-4">${statusBadge}</td>
-          <td class="p-4 text-center space-x-2 space-x-reverse">
-            <button onclick="updateTaskStatus(${task.id}, 'Approved')" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white text-xs rounded transition">Approve</button>
-            <button onclick="updateTaskStatus(${task.id}, 'Rejected')" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition">Reject</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      updateStats();
+        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+            errBox.innerText = error.message;
+            errBox.classList.remove('hidden');
+        } else {
+            checkAdminSession();
+        }
     }
 
-    // Task Action Logic
-    function updateTaskStatus(id, newStatus) {
-      const task = tasks.find(t => t.id === id);
-      if(task) {
-        task.status = newStatus;
-        renderTasks();
-      }
+    async function adminLogout() {
+        await _supabase.auth.signOut();
+        location.reload();
     }
 
-    // Render Users Table
-    function renderUsers(data = users) {
-      const tbody = document.getElementById('users-table-body');
-      tbody.innerHTML = '';
-
-      data.forEach(user => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50 transition';
-        tr.innerHTML = `
-          <td class="p-4 font-mono">${user.id}</td>
-          <td class="p-4 font-semibold text-gray-800">${user.name}</td>
-          <td class="p-4 text-gray-600">${user.email}</td>
-          <td class="p-4"><span class="px-2 py-1 rounded text-xs font-semibold ${user.role === 'Admin' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-700'}">${user.role}</span></td>
-          <td class="p-4"><span class="px-2 py-1 rounded text-xs font-semibold ${user.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${user.status}</span></td>
-          <td class="p-4 text-center">
-            <button onclick="deleteUser(${user.id})" class="text-red-500 hover:text-red-700 text-xs font-semibold">حذف (Delete)</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
-
-      updateStats();
+    function switchAdminTab(tabName) {
+        const tabs = ['submissions', 'create-task', 'users-list', 'client-orders'];
+        tabs.forEach(t => {
+            const btn = document.getElementById(`tab-btn-${t}`);
+            const content = document.getElementById(`tab-content-${t}`);
+            if (t === tabName) {
+                btn.className = "bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500";
+                content.classList.remove('hidden');
+            } else {
+                btn.className = "bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700";
+                content.classList.add('hidden');
+            }
+        });
     }
 
-    // Add User Logic
-    function addUser(e) {
-      e.preventDefault();
-      const name = document.getElementById('user-name').value;
-      const email = document.getElementById('user-email').value;
-      const role = document.getElementById('user-role').value;
+    // ================= 1. VERIFY COMPLETED TASKS & PROOFS =================
 
-      users.push({ id: users.length + 1, name, email, role, status: 'Active' });
-      renderUsers();
-      toggleForm('user-form-card');
+    async function loadWorkerSubmissions() {
+        const container = document.getElementById('submissions-list-container');
+        container.innerHTML = '<p class="text-xs text-slate-500">پورا ڪيل ٽاسڪ لوڊ ٿي رهيا آهن...</p>';
+
+        const { data: subs, error } = await _supabase.from('submissions')
+            .select('*, tasks(title, reward), profiles(email)')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            container.innerHTML = `<p class="text-xs text-red-400">Error: ${error.message}</p>`;
+            return;
+        }
+
+        if (!subs || subs.length === 0) {
+            container.innerHTML = '<p class="text-xs text-slate-500">کوئي به يوزر ثبوت جمع نه ڪرايو آهي.</p>';
+            return;
+        }
+
+        container.innerHTML = '';
+
+        subs.forEach(s => {
+            const workerEmail = s.profiles?.email || 'Registered User';
+            const taskTitle = s.tasks?.title || 'Review Task';
+            const reward = s.tasks?.reward || 0;
+
+            container.innerHTML += `
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3">
+                    <div class="flex justify-between items-start border-b border-slate-700 pb-2">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-200">${taskTitle}</h3>
+                            <p class="text-[11px] text-slate-400">يوزر Gmail: <strong class="text-emerald-400 font-mono">${workerEmail}</strong> | ريوارڊ: <strong class="text-amber-400">PKR ${reward}</strong></p>
+                        </div>
+                        <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg ${s.status === 'approved' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : s.status === 'rejected' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}">
+                            ${s.status.toUpperCase()}
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                        <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-500 font-bold block">يوزر جنهن Gmail سان ريويو ڏنو:</span>
+                            <span class="text-white font-mono">${s.target_gmail || 'N/A'}</span>
+                        </div>
+                        <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
+                            <span class="text-slate-500 font-bold block">ثبوت (Screenshot / Link):</span>
+                            ${s.proof_url ? `<a href="${s.proof_url}" target="_blank" class="text-blue-400 underline break-all">${s.proof_url}</a>` : '<span class="text-slate-500">نشي ڏنو ويو</span>'}
+                        </div>
+                    </div>
+
+                    ${s.status === 'pending' ? `
+                        <div class="flex gap-2 pt-2">
+                            <button onclick="updateSubmissionStatus(${s.id}, 'approved', '${s.user_id}', ${reward})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs">منظور ڪريو (Approve & Pay PKR ${reward})</button>
+                            <button onclick="updateSubmissionStatus(${s.id}, 'rejected', '${s.user_id}', 0)" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-800 font-bold px-4 py-2 rounded-xl text-xs">رد ڪريو (Reject)</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        });
     }
 
-    // Delete User Logic
-    function deleteUser(id) {
-      users = users.filter(u => u.id !== id);
-      renderUsers();
+    async function updateSubmissionStatus(subId, newStatus, workerId, rewardAmt) {
+        const { error } = await _supabase.from('submissions').update({ status: newStatus }).eq('id', subId);
+        if (error) return alert("Error: " + error.message);
+
+        if (newStatus === 'approved' && rewardAmt > 0) {
+            const { data: profile } = await _supabase.from('profiles').select('balance').eq('id', workerId).single();
+            const curBal = profile ? (profile.balance || 0) : 0;
+            await _supabase.from('profiles').update({ balance: curBal + rewardAmt }).eq('id', workerId);
+        }
+
+        alert(`ٽاسڪ #${subId} جو نتيجو ${newStatus} ڪيو ويو!`);
+        loadWorkerSubmissions();
     }
 
-    // Filter Users
-    function filterUsers() {
-      const query = document.getElementById('user-search').value.toLowerCase();
-      const filtered = users.filter(u => u.name.toLowerCase().includes(query) || u.email.toLowerCase().includes(query));
-      renderUsers(filtered);
+    // ================= 2. PUBLISH TASK FOR USERS =================
+
+    async function publishWorkerTask() {
+        const title = document.getElementById('task-title').value.trim();
+        const reward = parseFloat(document.getElementById('task-reward').value);
+        const link = document.getElementById('task-link').value.trim();
+        const desc = document.getElementById('task-desc').value.trim();
+
+        if (!title || !reward || !link) {
+            return alert("ٽاسڪ جو عنوان، انعام ۽ لنڪ لازمي لکو!");
+        }
+
+        const { error } = await _supabase.from('tasks').insert([{
+            title, reward, link, description: desc
+        }]);
+
+        if (error) alert("ٽاسڪ نٿو موڪلي سگهجي: " + error.message);
+        else {
+            alert("ٽاسڪ يوزر پينل ڏانهن ڪاميابيءَ سان موڪليو ويو! 🚀");
+            document.getElementById('task-title').value = '';
+            document.getElementById('task-reward').value = '';
+            document.getElementById('task-link').value = '';
+            document.getElementById('task-desc').value = '';
+            switchAdminTab('submissions');
+        }
     }
 
-    // Render Clients Table
-    function renderClients() {
-      const tbody = document.getElementById('clients-table-body');
-      tbody.innerHTML = '';
+    // ================= 3. LOAD REGISTERED USERS LIST =================
 
-      clients.forEach(client => {
-        const tr = document.createElement('tr');
-        tr.className = 'hover:bg-slate-50 transition';
-        tr.innerHTML = `
-          <td class="p-4 font-mono">${client.id}</td>
-          <td class="p-4 font-semibold text-gray-800">${client.name}</td>
-          <td class="p-4 text-gray-600">${client.contact}</td>
-          <td class="p-4 text-gray-600">${client.project}</td>
-          <td class="p-4"><span class="px-2 py-1 rounded text-xs font-semibold bg-green-100 text-green-700">${client.status}</span></td>
-          <td class="p-4 text-center">
-            <button onclick="deleteClient(${client.id})" class="text-red-500 hover:text-red-700 text-xs font-semibold">حذف</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
-      });
+    async function loadRegisteredUsers() {
+        const tbody = document.getElementById('users-table-body');
+        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">يوزرس لوڊ ٿي رهيا آهن...</td></tr>';
 
-      updateStats();
+        const { data: users, error } = await _supabase.from('profiles').select('*').order('created_at', { ascending: false });
+
+        if (error) {
+            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-400">Error: ${error.message}</td></tr>`;
+            return;
+        }
+
+        if (!users || users.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">کوئي يوزر رجسٽر ٿيل ناهي.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = '';
+        users.forEach(u => {
+            tbody.innerHTML += `
+                <tr class="hover:bg-slate-800/50">
+                    <td class="p-3 font-mono text-[10px] text-slate-400">${u.id}</td>
+                    <td class="p-3 font-mono font-bold text-emerald-400" dir="ltr">${u.email || 'No Email'}</td>
+                    <td class="p-3 font-bold text-amber-400">PKR ${u.balance || 0}</td>
+                    <td class="p-3 text-slate-500">${new Date(u.created_at).toLocaleDateString()}</td>
+                </tr>
+            `;
+        });
     }
 
-    // Add Client Logic
-    function addClient(e) {
-      e.preventDefault();
-      const name = document.getElementById('client-name').value;
-      const contact = document.getElementById('client-contact').value;
-      const project = document.getElementById('client-project').value;
+    // ================= 4. LOAD CLIENT ORDERS =================
 
-      clients.push({ id: clients.length + 1, name, contact, project, status: 'Active' });
-      renderClients();
-      toggleForm('client-form-card');
+    async function loadAdminClientOrders() {
+        const container = document.getElementById('admin-client-orders-container');
+        container.innerHTML = '<p class="text-xs text-slate-500">ڪلائنٽس جا آرڊر لوڊ ٿي رهيا آهن...</p>';
+
+        const { data: orders, error } = await _supabase.from('client_orders').select('*').order('created_at', { ascending: false });
+
+        if (error) {
+            container.innerHTML = `<p class="text-xs text-red-400">Error: ${error.message}</p>`;
+            return;
+        }
+
+        if (!orders || orders.length === 0) {
+            container.innerHTML = '<p class="text-xs text-slate-500">کوئي به آرڊر ناهي آيو.</p>';
+            return;
+        }
+
+        container.innerHTML = '';
+        for (const ord of orders) {
+            let clientEmail = 'Registered Client';
+            let clientPhone = '';
+
+            if (ord.client_id) {
+                const { data: prof } = await _supabase.from('profiles').select('email, raw_user_meta_data').eq('id', ord.client_id).single();
+                if (prof) {
+                    clientEmail = prof.email || 'Registered Client';
+                    clientPhone = prof.raw_user_meta_data?.phone || '';
+                }
+            }
+
+            const encodedWaMsg = encodeURIComponent(`السلام علیکم! توهان جي Google Maps Review آرڊر بابت رابطو ڪيو ويو آهي.`);
+            const waLink = clientPhone ? `https://wa.me/${clientPhone.replace(/[^0-9]/g, '')}?text=${encodedWaMsg}` : '#';
+
+            container.innerHTML += `
+                <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3">
+                    <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                        <span class="text-xs font-bold text-emerald-400">${ord.review_type} Review (${ord.stars_rating} ⭐)</span>
+                        <span class="text-xs text-slate-400">Client Email: <strong class="text-white">${clientEmail}</strong></span>
+                    </div>
+                    <div class="text-xs text-slate-300">
+                        <p>تعداد: <strong>${ord.quantity} Reviews</strong></p>
+                        <p>Google Maps Link: <a href="${ord.google_maps_link}" target="_blank" class="text-blue-400 underline break-all">${ord.google_maps_link}</a></p>
+                    </div>
+                    ${clientPhone ? `<a href="${waLink}" target="_blank" class="inline-block bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg text-xs">💬 WhatsApp تي رابطو ڪريو (${clientPhone})</a>` : ''}
+                </div>
+            `;
+        }
     }
 
-    // Delete Client
-    function deleteClient(id) {
-      clients = clients.filter(c => c.id !== id);
-      renderClients();
-    }
-
-    // Overall Stats Counter Update
-    function updateStats() {
-      document.getElementById('stat-pending-tasks').innerText = tasks.filter(t => t.status === 'Pending').length;
-      document.getElementById('stat-approved-tasks').innerText = tasks.filter(t => t.status === 'Approved').length;
-      document.getElementById('stat-total-users').innerText = users.length;
-      document.getElementById('stat-total-clients').innerText = clients.length;
-    }
-
-    // Initial Load
-    renderTasks();
-    renderUsers();
-    renderClients();
-  </script>
+    document.addEventListener('DOMContentLoaded', () => initAdminPortal());
+    </script>
 </body>
 </html>
