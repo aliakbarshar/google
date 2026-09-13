@@ -248,14 +248,12 @@
     }
 
     async function loadUserTasks() {
-        // Step 1: يوزر جون پوريون سبمشنز کڻو
         const { data: subs } = await _supabase.from('submissions')
             .select('task_id')
             .eq('user_id', currentUser.id);
 
         const submittedTaskIds = subs ? subs.map(s => s.task_id) : [];
 
-        // Step 2: اهي ٽاسڪ کڻو جيڪي ان يوزر لاءِ مخصوص يا سڀني لاءِ کليل (NULL) هجن
         const { data: tasks, error } = await _supabase.from('tasks')
             .select('*')
             .or(`assigned_user_id.eq.${currentUser.id},assigned_user_id.is.null`)
@@ -270,12 +268,14 @@
             return;
         }
 
-        // جيڪي يوزر سبمٽ ڪري چڪو آهي اهي ڪڍي ڇڏيو
         const activeTasks = tasks ? tasks.filter(t => !submittedTaskIds.includes(t.id)) : [];
 
         if(activeTasks.length > 0) {
             activeTasks.forEach(t => {
                 const targetGmailText = t.target_gmail ? t.target_gmail : 'Any Gmail Account';
+                const reviewTextVal = t.review_text ? t.review_text : '';
+                const mapsLinkVal = t.google_maps_link ? t.google_maps_link : '#';
+
                 container.innerHTML += `
                     <div class="bg-white p-4 rounded-2xl border space-y-3 shadow-sm">
                         <div class="flex justify-between items-center border-b pb-2">
@@ -287,15 +287,15 @@
                             <p class="font-mono bg-white p-1 rounded border text-center text-blue-600 font-bold select-all">${targetGmailText}</p>
                         </div>
                         <div class="space-y-1">
-                            <label class="text-[10px] text-slate-500 font-bold">1. Copy Review Text:</label>
+                            <label class="text-[10px] text-slate-500 font-bold">1. Copy Review Text (Comment):</label>
                             <div class="flex gap-2">
-                                <input type="text" readonly id="task-txt-${t.id}" value="${t.review_text || ''}" class="w-full bg-slate-50 border p-2 rounded-xl text-xs font-mono">
+                                <input type="text" readonly id="task-txt-${t.id}" value="${reviewTextVal}" class="w-full bg-slate-50 border p-2 rounded-xl text-xs font-mono">
                                 <button onclick="copyTaskTxt(${t.id})" class="bg-slate-800 text-white text-xs px-3 rounded-xl font-bold">Copy</button>
                             </div>
                         </div>
                         <div>
                             <label class="text-[10px] text-slate-500 font-bold block mb-1">2. Open Location Link:</label>
-                            <a href="${t.google_maps_link}" target="_blank" class="block text-center bg-blue-600 text-white text-xs py-2 rounded-xl font-bold">Google Maps ↗</a>
+                            <a href="${mapsLinkVal}" target="_blank" class="block text-center bg-blue-600 text-white text-xs py-2 rounded-xl font-bold">Google Maps ↗</a>
                         </div>
                         <div class="border-t pt-2 space-y-1">
                             <label class="text-[10px] text-slate-500 font-bold block">3. Paste Review Share Link / Proof Details:</label>
@@ -320,7 +320,6 @@
     }
 
     async function submitTaskProof(taskId) {
-        // ID سڌي ريت صحيح ٿيل Textarea مان کڻي رھيا آھيون
         const proofField = document.getElementById(`proof-input-${taskId}`);
         if(!proofField) return alert("System error: Input box not found!");
 
