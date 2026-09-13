@@ -3,393 +3,221 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Control Center</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Google Review System - Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen p-4">
+<body class="bg-slate-100 text-slate-800 min-h-screen p-3 md:p-6">
 
-    <!-- Admin Authentication Modal -->
-    <div id="admin-auth-modal" class="fixed inset-0 bg-slate-950/95 flex items-center justify-center p-4 z-50">
-        <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl w-full max-w-md space-y-4">
-            <h2 class="text-xl font-bold text-emerald-400 text-center">🛡️ Admin Panel Login</h2>
-            <p class="text-xs text-slate-400 text-center">Sign in with your administrator account</p>
-            
-            <div class="space-y-3">
-                <input type="email" id="admin-email-input" value="aliakbarshar@gmail.com" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
-                <input type="password" id="admin-pass-input" placeholder="Password" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
-                <button onclick="handleAdminLogin()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition">Login to Panel 🔓</button>
-                <p id="admin-auth-err" class="text-xs text-red-400 text-center hidden"></p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Dashboard Layout -->
-    <div class="max-w-7xl mx-auto space-y-6">
-        
-        <!-- Top Header -->
-        <header class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+    <div class="max-w-xl mx-auto space-y-4">
+        <!-- Header -->
+        <header class="bg-slate-900 text-white p-4 rounded-2xl shadow-lg flex justify-between items-center">
             <div>
-                <h1 class="font-bold text-emerald-400 text-xl">⚙️ Admin Dashboard</h1>
-                <p id="admin-status-lbl" class="text-xs text-slate-400">Verifying session...</p>
+                <h1 class="font-bold text-base">Admin Dashboard</h1>
+                <p id="admin-email" class="text-xs text-slate-400">Loading...</p>
             </div>
-            <button onclick="adminLogout()" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-700/50 px-3 py-1.5 rounded-lg text-xs font-bold">Logout 🔒</button>
+            <button onclick="logoutAdmin()" class="bg-red-600 text-white text-xs px-3 py-1.5 rounded-xl font-bold">Sign Out</button>
         </header>
 
-        <!-- Navigation Tabs -->
-        <div class="flex gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
-            <button id="tab-btn-submissions" onclick="switchAdminTab('submissions')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500">
-                ✅ Completed Tasks & Proofs
-            </button>
-            <button id="tab-btn-create-task" onclick="switchAdminTab('create-task')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
-                ➕ Publish Task (Select Multiple / All)
-            </button>
-            <button id="tab-btn-users-list" onclick="switchAdminTab('users-list')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
-                👥 Users & Registered Gmails
-            </button>
+        <!-- Admin Login Block (If not logged in) -->
+        <div id="admin-auth-block" class="bg-white p-6 rounded-2xl border shadow space-y-4">
+            <h2 class="font-bold text-sm text-slate-700">Admin Sign In</h2>
+            <form onsubmit="event.preventDefault(); handleAdminLogin();" class="space-y-3">
+                <input type="email" id="admin-email-input" placeholder="Admin Email" required class="w-full border p-2.5 rounded-xl text-xs outline-none focus:border-blue-600">
+                <input type="password" id="admin-pass-input" placeholder="Password" required class="w-full border p-2.5 rounded-xl text-xs outline-none focus:border-blue-600">
+                <button type="submit" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs">Login as Admin</button>
+            </form>
         </div>
 
-        <!-- ================= TAB 1: USER PROOFS REVIEW ================= -->
-        <section id="tab-content-submissions" class="space-y-4">
-            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
-                <div>
-                    <h2 class="font-bold text-base text-emerald-400">🔍 Task Submissions & Verification</h2>
-                    <p class="text-xs text-slate-400">Verify submitted screenshots and approve payments.</p>
-                </div>
-                <button onclick="loadWorkerSubmissions()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ Refresh Submissions</button>
-            </div>
-
-            <div id="submissions-list-container" class="space-y-4">
-                <p class="text-xs text-slate-500">Loading submission data...</p>
-            </div>
-        </section>
-
-        <!-- ================= TAB 2: PUBLISH TASK ================= -->
-        <section id="tab-content-create-task" class="hidden space-y-4">
-            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
-                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">➕ Assign Google Maps Review Task</h2>
+        <!-- Admin Main Panel -->
+        <div id="admin-main" class="hidden space-y-4">
+            <!-- Create Task Card -->
+            <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
+                <h3 class="font-bold text-xs text-slate-700">Create New Review Task</h3>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">Task Title *</label>
-                        <input type="text" id="task-title" value="Google Maps 5-Star Review Task" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-slate-400 mb-1">Worker Reward (PKR) *</label>
-                        <input type="number" id="task-reward" placeholder="e.g. 50" value="50" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
-                    </div>
-
-                    <!-- Multi-Target User Dropdown -->
-                    <div class="md:col-span-2 bg-slate-900/90 p-4 rounded-xl border border-amber-500/50 space-y-2">
-                        <div class="flex justify-between items-center">
-                            <label class="block text-xs font-bold text-amber-400">🎯 Select Target Users (Ctrl + Click for Multiple) *</label>
-                            <button type="button" onclick="selectAllUsersInDropdown()" class="text-[11px] bg-amber-500/20 text-amber-300 px-2 py-1 rounded border border-amber-500/30 font-bold hover:bg-amber-500/40">Select All Users</button>
-                        </div>
-                        <select id="task-target-emails-multi" multiple class="w-full bg-slate-800 border border-slate-700 p-2.5 rounded-xl text-xs text-amber-300 outline-none focus:border-amber-500 h-32">
-                            <option value="ALL" selected>🌐 [ ALL USERS ] - Publish Open Task for Everyone</option>
-                        </select>
-                        <p class="text-[11px] text-slate-400">توهان هڪ يا هڪ کان وڌيڪ يوزر فلٽر ڪري سگهو ٿا.</p>
-                    </div>
-
-                    <div class="md:col-span-2">
-                        <label class="block text-xs text-slate-400 mb-1">Target Google Maps Link *</label>
-                        <input type="url" id="task-link" value="https://maps.app.goo.gl/c9twyGjZtWgyVqoK9" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-emerald-400 font-mono outline-none focus:border-emerald-500">
-                    </div>
-                    <div class="md:col-span-2">
-                        <label class="block text-xs text-slate-400 mb-1">Required Review Text & Instructions *</label>
-                        <textarea id="task-desc" placeholder="Write exact comment text or guidelines for the worker..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 h-24">Please give a 5-Star review on Google Maps with positive feedback.</textarea>
-                    </div>
-                </div>
-                <button onclick="publishWorkerTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition">Publish Task Now 🚀</button>
-            </div>
-        </section>
-
-        <!-- ================= TAB 3: USERS LIST ================= -->
-        <section id="tab-content-users-list" class="hidden space-y-4">
-            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
                 <div>
-                    <h2 class="font-bold text-base text-emerald-400">👥 Users & Registered Gmail Accounts</h2>
-                    <p class="text-xs text-slate-400">Select any user to directly assign this Google Maps Task.</p>
+                    <label class="text-[10px] text-slate-500 font-bold block mb-1">Google Maps Location Link:</label>
+                    <input type="url" id="new-task-map" placeholder="https://maps.app.goo.gl/..." class="w-full border p-2.5 rounded-xl text-xs outline-none">
                 </div>
-                <button onclick="loadRegisteredUsers()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ Refresh Users</button>
+
+                <div>
+                    <label class="text-[10px] text-slate-500 font-bold block mb-1">Review Comment Text:</label>
+                    <textarea id="new-task-comment" rows="2" placeholder="Write review text here..." class="w-full border p-2.5 rounded-xl text-xs outline-none"></textarea>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[10px] text-slate-500 font-bold block mb-1">Target Gmail (Optional):</label>
+                        <input type="email" id="new-task-gmail" placeholder="Specific Gmail or leave blank" class="w-full border p-2.5 rounded-xl text-xs outline-none">
+                    </div>
+                    <div>
+                        <label class="text-[10px] text-slate-500 font-bold block mb-1">Reward (PKR):</label>
+                        <input type="number" id="new-task-reward" value="20" class="w-full border p-2.5 rounded-xl text-xs outline-none">
+                    </div>
+                </div>
+
+                <button onclick="createNewTask()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-blue-700">Publish Task</button>
             </div>
 
-            <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-900 border-b border-slate-700 text-slate-400 text-xs">
-                            <th class="p-3">User Primary Account</th>
-                            <th class="p-3">Registered Gmails List</th>
-                            <th class="p-3">Balance</th>
-                            <th class="p-3">Quick Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="users-table-body" class="divide-y divide-slate-700/50 text-xs">
-                    </tbody>
-                </table>
+            <!-- Submissions Review Section -->
+            <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
+                <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
+                    <span>User Submissions (Pending Proofs)</span>
+                    <button onclick="loadAdminData()" class="text-[10px] text-blue-600 underline">Refresh</button>
+                </h3>
+                <div id="admin-submissions-list" class="space-y-3">
+                    <p class="text-xs text-slate-400 text-center py-4">Loading submissions...</p>
+                </div>
             </div>
-        </section>
-
+        </div>
     </div>
 
     <script>
     const SUPABASE_URL = 'https://zpglwxppgzdjirnvvlfg.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZ2x3eHBwZ3pkamlybnZ2bGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNzg1NTksImV4cCI6MjEwNDg1NDU1OX0.ZnQm9NqG4UMU7BNadusvKN0s8CU4Evkzxzk2iJckpO4';
-
+    
     let _supabase = null;
 
-    function initAdminPortal() {
+    function initAdmin(retries = 5) {
         if (window.supabase && typeof window.supabase.createClient === 'function') {
             _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             checkAdminSession();
-        } else {
-            setTimeout(initAdminPortal, 300);
-        }
-    }
-
-    async function checkAdminSession() {
-        const { data: { user } } = await _supabase.auth.getUser();
-        if (user && user.email === 'aliakbarshar@gmail.com') {
-            document.getElementById('admin-auth-modal').classList.add('hidden');
-            document.getElementById('admin-status-lbl').innerText = `Logged in: ${user.email}`;
-            loadWorkerSubmissions();
-            loadRegisteredUsers();
-        } else {
-            document.getElementById('admin-auth-modal').classList.remove('hidden');
-        }
+        } else if (retries > 0) setTimeout(() => initAdmin(retries - 1), 300);
     }
 
     async function handleAdminLogin() {
         const email = document.getElementById('admin-email-input').value.trim();
         const password = document.getElementById('admin-pass-input').value.trim();
-        const errBox = document.getElementById('admin-auth-err');
 
-        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-            errBox.innerText = error.message;
-            errBox.classList.remove('hidden');
+        const { error } = await _supabase.auth.signInWithPassword({ email, password });
+        if(error) alert("Login error: " + error.message);
+        else checkAdminSession();
+    }
+
+    async function checkAdminSession() {
+        const { data: { user } } = await _supabase.auth.getUser();
+        if(user) {
+            document.getElementById('admin-auth-block').classList.add('hidden');
+            document.getElementById('admin-main').classList.remove('hidden');
+            document.getElementById('admin-email').innerText = user.email;
+            loadAdminData();
         } else {
-            checkAdminSession();
+            document.getElementById('admin-auth-block').classList.remove('hidden');
+            document.getElementById('admin-main').classList.add('hidden');
         }
     }
 
-    async function adminLogout() {
+    async function createNewTask() {
+        const mapsLink = document.getElementById('new-task-map').value.trim();
+        const reviewText = document.getElementById('new-task-comment').value.trim();
+        const targetGmail = document.getElementById('new-task-gmail').value.trim();
+        const reward = parseFloat(document.getElementById('new-task-reward').value) || 20;
+
+        if(!mapsLink || !reviewText) {
+            return alert("مهرباني ڪري ميپس لنڪ ۽ ڪمينٽ جو متن (Review Text) ٻئي داخل ڪريو!");
+        }
+
+        const { error } = await _supabase.from('tasks').insert([{
+            google_maps_link: mapsLink,
+            review_text: reviewText,
+            target_gmail: targetGmail || null,
+            reward: reward,
+            status: 'active'
+        }]);
+
+        if(!error) {
+            alert("Task published successfully!");
+            document.getElementById('new-task-map').value = '';
+            document.getElementById('new-task-comment').value = '';
+            document.getElementById('new-task-gmail').value = '';
+        } else {
+            alert("Error creating task: " + error.message);
+        }
+    }
+
+    async function loadAdminData() {
+        const container = document.getElementById('admin-submissions-list');
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Loading...</p>';
+
+        const { data: subs, error } = await _supabase.from('submissions')
+            .select('*, tasks(*), profiles:user_id(full_name, phone)')
+            .eq('status', 'pending')
+            .order('id', { ascending: false });
+
+        if(error) {
+            container.innerHTML = `<p class="text-xs text-red-500 text-center">Error: ${error.message}</p>`;
+            return;
+        }
+
+        if(subs && subs.length > 0) {
+            let html = '';
+            subs.forEach(s => {
+                const userName = s.profiles?.full_name || 'User';
+                const userPhone = s.profiles?.phone || 'No Phone';
+                const taskComment = s.tasks?.review_text || 'No comment provided';
+                const taskMap = s.tasks?.google_maps_link || '#';
+
+                html += `
+                    <div class="bg-slate-50 p-3 rounded-xl border space-y-2 text-xs">
+                        <div class="flex justify-between items-center font-bold text-slate-700">
+                            <span>👤 ${userName} (${userPhone})</span>
+                            <span class="text-blue-600">Task #${s.task_id}</span>
+                        </div>
+                        <div class="bg-white p-2 rounded border space-y-1">
+                            <p class="text-[11px] text-slate-600"><strong>Comment:</strong> ${taskComment}</p>
+                            <a href="${taskMap}" target="_blank" class="text-blue-500 underline block text-[11px]">Open Maps Link ↗</a>
+                        </div>
+                        <div class="bg-emerald-50 p-2 rounded border border-emerald-200">
+                            <strong class="text-emerald-800 text-[10px] block">User Proof Link / Details:</strong>
+                            <p class="font-mono text-emerald-900 select-all">${s.proof_link || 'No proof link'}</p>
+                        </div>
+                        <div class="flex gap-2 pt-1">
+                            <button onclick="approveSubmission(${s.id}, ${s.user_id}, ${s.tasks?.reward || 20})" class="w-1/2 bg-emerald-600 text-white py-1.5 rounded-lg font-bold hover:bg-emerald-700">Approve & Pay</button>
+                            <button onclick="rejectSubmission(${s.id})" class="w-1/2 bg-red-600 text-white py-1.5 rounded-lg font-bold hover:bg-red-700">Reject</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No pending submissions found.</p>';
+        }
+    }
+
+    async function approveSubmission(subId, userId, rewardAmount) {
+        // Status اپڊيٽ ڪريو
+        const { error: subErr } = await _supabase.from('submissions').update({ status: 'approved' }).eq('id', subId);
+        if(subErr) return alert("Error: " + subErr.message);
+
+        // يوزر جي بيلنس ۾ پئسا وڌايو
+        const { data: prof } = await _supabase.from('profiles').select('balance').eq('id', userId).single();
+        const currentBal = prof ? (prof.balance || 0) : 0;
+        const newBal = currentBal + rewardAmount;
+
+        const { error: balErr } = await _supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
+        if(balErr) alert("Submission approved, but balance update failed: " + balErr.message);
+        else {
+            alert("Task approved and reward added to user balance!");
+            loadAdminData();
+        }
+    }
+
+    async function rejectSubmission(subId) {
+        const { error } = await _supabase.from('submissions').update({ status: 'rejected' }).eq('id', subId);
+        if(!error) {
+            alert("Submission rejected.");
+            loadAdminData();
+        } else alert("Error: " + error.message);
+    }
+
+    async function logoutAdmin() {
         await _supabase.auth.signOut();
         location.reload();
     }
 
-    function switchAdminTab(tabName) {
-        const tabs = ['submissions', 'create-task', 'users-list'];
-        tabs.forEach(t => {
-            const btn = document.getElementById(`tab-btn-${t}`);
-            const content = document.getElementById(`tab-content-${t}`);
-            if (t === tabName) {
-                btn.className = "bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500";
-                content.classList.remove('hidden');
-            } else {
-                btn.className = "bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700";
-                content.classList.add('hidden');
-            }
-        });
-    }
-
-    // Safe Submissions Loader
-    async function loadWorkerSubmissions() {
-        const container = document.getElementById('submissions-list-container');
-        container.innerHTML = '<p class="text-xs text-slate-500">Loading submitted tasks...</p>';
-
-        try {
-            const { data: subs, error: subErr } = await _supabase
-                .from('submissions')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (subErr) throw subErr;
-
-            if (!subs || subs.length === 0) {
-                container.innerHTML = '<p class="text-xs text-slate-500 p-4 border border-slate-800 rounded-xl bg-slate-900/50">اڃا تائين ڪنهن به يوزر ٽاسڪ جو پروف سبميٽ ناهي ڪيو.</p>';
-                return;
-            }
-
-            const taskIds = [...new Set(subs.map(s => s.task_id).filter(Boolean))];
-            const userIds = [...new Set(subs.map(s => s.user_id).filter(Boolean))];
-
-            let tasksMap = new Map();
-            let profilesMap = new Map();
-
-            if (taskIds.length > 0) {
-                const { data: tasks } = await _supabase.from('tasks').select('*').in('id', taskIds);
-                if (tasks) tasks.forEach(t => tasksMap.set(t.id, t));
-            }
-
-            if (userIds.length > 0) {
-                const { data: profiles } = await _supabase.from('profiles').select('id, email').in('id', userIds);
-                if (profiles) profiles.forEach(p => profilesMap.set(p.id, p));
-            }
-
-            container.innerHTML = '';
-            subs.forEach(s => {
-                const task = tasksMap.get(s.task_id) || { title: 'Google Maps Task', reward: 0 };
-                const user = profilesMap.get(s.user_id) || { email: 'Registered User' };
-                const currentStatus = s.status || 'pending';
-
-                container.innerHTML += `
-                    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3">
-                        <div class="flex justify-between items-start border-b border-slate-700 pb-2">
-                            <div>
-                                <h3 class="text-sm font-bold text-slate-200">${task.title || 'Google Maps Task'}</h3>
-                                <p class="text-[11px] text-slate-400">User Email: <strong class="text-emerald-400 font-mono">${user.email}</strong> | Reward: <strong class="text-amber-400">PKR ${task.reward || 0}</strong></p>
-                            </div>
-                            <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg ${currentStatus === 'approved' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : currentStatus === 'rejected' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}">
-                                ${currentStatus.toUpperCase()}
-                            </span>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                            <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-                                <span class="text-slate-400 font-bold block mb-1">Gmail Used for Review:</span>
-                                <span class="text-emerald-400 font-mono font-bold">${s.target_gmail || s.gmail_used || 'Not specified'}</span>
-                            </div>
-                            <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-                                <span class="text-slate-400 font-bold block mb-1">Proof Link / Screenshot:</span>
-                                ${s.proof_url ? `<a href="${s.proof_url}" target="_blank" class="text-blue-400 underline break-all">${s.proof_url}</a>` : '<span class="text-slate-500">No Link Uploaded</span>'}
-                            </div>
-                        </div>
-
-                        ${currentStatus === 'pending' ? `
-                            <div class="flex gap-2 pt-2">
-                                <button onclick="updateSubmissionStatus(${s.id}, 'approved', '${s.user_id}', ${task.reward || 0})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">Approve & Pay PKR ${task.reward || 0} ✅</button>
-                                <button onclick="updateSubmissionStatus(${s.id}, 'rejected', '${s.user_id}', 0)" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-800 font-bold px-4 py-2 rounded-xl text-xs transition">Reject ❌</button>
-                            </div>
-                        ` : ''}
-                    </div>
-                `;
-            });
-
-        } catch (err) {
-            container.innerHTML = `<p class="text-xs text-red-400 bg-red-950/40 p-3 rounded-xl border border-red-800">Error: ${err.message}</p>`;
-        }
-    }
-
-    async function updateSubmissionStatus(subId, newStatus, workerId, rewardAmt) {
-        const { error } = await _supabase.from('submissions').update({ status: newStatus }).eq('id', subId);
-        if (error) return alert("Error: " + error.message);
-
-        if (newStatus === 'approved' && rewardAmt > 0) {
-            const { data: profile } = await _supabase.from('profiles').select('balance').eq('id', workerId).single();
-            const curBal = profile ? (profile.balance || 0) : 0;
-            await _supabase.from('profiles').update({ balance: curBal + rewardAmt }).eq('id', workerId);
-        }
-
-        alert(`Submission marked as ${newStatus}`);
-        loadWorkerSubmissions();
-        loadRegisteredUsers();
-    }
-
-    function selectAllUsersInDropdown() {
-        const selectBox = document.getElementById('task-target-emails-multi');
-        for (let i = 0; i < selectBox.options.length; i++) {
-            selectBox.options[i].selected = true;
-        }
-    }
-
-    // Publish Task Function with Safe Column Mapping
-    async function publishWorkerTask() {
-        const title = document.getElementById('task-title').value.trim();
-        const reward = parseFloat(document.getElementById('task-reward').value);
-        const link = document.getElementById('task-link').value.trim();
-        const desc = document.getElementById('task-desc').value.trim();
-
-        const selectBox = document.getElementById('task-target-emails-multi');
-        const selectedOptions = Array.from(selectBox.selectedOptions).map(o => o.value);
-
-        if (!title || !reward || !link) {
-            return alert("Please fill Title, Reward, and Link.");
-        }
-
-        if (selectedOptions.includes('ALL') || selectedOptions.length === 0) {
-            const { error } = await _supabase.from('tasks').insert([{
-                title: title,
-                reward: reward,
-                link: link,
-                description: desc,
-                target_email: null
-            }]);
-            if (error) return alert("Publish Error: " + error.message);
-            alert("Task published for ALL registered users! 🚀");
-        } else {
-            const rowsToInsert = selectedOptions.map(email => ({
-                title: title,
-                reward: reward,
-                link: link,
-                description: desc,
-                target_email: email
-            }));
-
-            const { error } = await _supabase.from('tasks').insert(rowsToInsert);
-            if (error) return alert("Publish Error: " + error.message);
-            alert(`Task published for ${selectedOptions.length} selected users! 🚀`);
-        }
-
-        switchAdminTab('submissions');
-    }
-
-    // Load Registered Users
-    async function loadRegisteredUsers() {
-        const tbody = document.getElementById('users-table-body');
-        const selectDropdown = document.getElementById('task-target-emails-multi');
-        
-        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Loading users...</td></tr>';
-
-        const { data: users, error } = await _supabase.from('profiles').select('*').order('created_at', { ascending: false });
-
-        if (error) {
-            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-400">Error loading users: ${error.message}</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = '';
-        selectDropdown.innerHTML = '<option value="ALL">🌐 [ ALL USERS ] - Open Task for Everyone</option>';
-
-        users.forEach(u => {
-            const primaryEmail = u.email || 'No Email';
-            const userGmails = u.gmails && Array.isArray(u.gmails) && u.gmails.length > 0 ? u.gmails : [primaryEmail];
-            
-            let gmailsBadgesHtml = '';
-            userGmails.forEach(g => {
-                gmailsBadgesHtml += `<span class="inline-block bg-slate-900 text-emerald-400 border border-slate-700 px-2 py-1 rounded-lg text-[11px] font-mono mr-1 mb-1">📧 ${g}</span>`;
-                selectDropdown.innerHTML += `<option value="${g}">${primaryEmail} (${g})</option>`;
-            });
-
-            tbody.innerHTML += `
-                <tr class="hover:bg-slate-800/50">
-                    <td class="p-3 font-mono font-bold text-slate-200">${primaryEmail}</td>
-                    <td class="p-3">${gmailsBadgesHtml}</td>
-                    <td class="p-3 font-bold text-amber-400">PKR ${u.balance || 0}</td>
-                    <td class="p-3">
-                        <button onclick="assignTaskToUser('${primaryEmail}')" class="bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-600/50 px-2.5 py-1 rounded-lg text-[11px] font-bold">
-                            ➕ Assign Task
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-    }
-
-    function assignTaskToUser(userEmail) {
-        switchAdminTab('create-task');
-        const selectBox = document.getElementById('task-target-emails-multi');
-        for (let i = 0; i < selectBox.options.length; i++) {
-            selectBox.options[i].selected = selectBox.options[i].value === userEmail;
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', () => initAdminPortal());
+    document.addEventListener('DOMContentLoaded', () => initAdmin());
     </script>
 </body>
 </html>
