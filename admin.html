@@ -15,7 +15,10 @@
         <!-- Header -->
         <header class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
             <h1 class="font-bold text-emerald-400 text-base">⚡ Admin Control Panel</h1>
-            <span id="admin-user" class="text-xs text-slate-400">Loading...</span>
+            <div class="flex items-center gap-3">
+                <span id="admin-user" class="text-xs text-slate-400">Loading...</span>
+                <button onclick="adminLogout()" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-700/50 px-2.5 py-1 rounded-lg text-xs font-bold transition">Logout 🔒</button>
+            </div>
         </header>
 
         <!-- Stats Counter Section -->
@@ -76,10 +79,34 @@
     const SUPABASE_URL = 'https://zpglwxppgzdjirnvvlfg.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZ2x3eHBwZ3pkamlybnZ2bGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNzg1NTksImV4cCI6MjEwNDg1NDU1OX0.ZnQm9NqG4UMU7BNadusvKN0s8CU4Evkzxzk2iJckpO4';
     
+    const ADMIN_PASSWORD = "Ali2020@";
+
+    function authenticateAdminPassword() {
+        let savedAuth = sessionStorage.getItem("admin_authenticated");
+        if (savedAuth === "true") return true;
+
+        let pass = prompt("Enter Admin Secret Password:");
+        if (pass === ADMIN_PASSWORD) {
+            sessionStorage.setItem("admin_authenticated", "true");
+            return true;
+        } else {
+            alert("Incorrect Password! Access Denied.");
+            window.location.href = "index.html";
+            return false;
+        }
+    }
+
+    function adminLogout() {
+        sessionStorage.removeItem("admin_authenticated");
+        window.location.href = "index.html";
+    }
+
     let _supabase = null;
     let allUsers = [];
 
     function initAdmin(retries = 5) {
+        if (!authenticateAdminPassword()) return;
+
         if (window.supabase && typeof window.supabase.createClient === 'function') {
             _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             checkAdminAccess();
