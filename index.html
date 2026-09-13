@@ -308,10 +308,10 @@
                             <a href="${t.google_maps_link}" target="_blank" class="block text-center bg-blue-600 text-white text-xs py-2 rounded-xl font-bold">Google Maps ↗</a>
                         </div>
                         <div class="border-t pt-2 space-y-1">
-                            <label class="text-[10px] text-slate-500 font-bold block">3. Paste your Review Proof Link:</label>
-                            <div class="flex gap-2">
-                                <input type="url" id="proof-link-${t.id}" placeholder="https://..." class="w-full border p-2 rounded-xl text-xs outline-none">
-                                <button onclick="submitTaskProof(${t.id})" class="bg-emerald-600 text-white text-xs px-3 rounded-xl font-bold">Submit</button>
+                            <label class="text-[10px] text-slate-500 font-bold block">3. Paste Full Review Share Text / Proof Link:</label>
+                            <div class="space-y-2">
+                                <textarea id="proof-link-${t.id}" rows="2" placeholder="Paste full share message or link here..." class="w-full border p-2 rounded-xl text-xs outline-none focus:border-blue-600"></textarea>
+                                <button onclick="submitTaskProof(${t.id})" class="w-full bg-emerald-600 text-white text-xs py-2 rounded-xl font-bold hover:bg-emerald-700">Submit Proof</button>
                             </div>
                         </div>
                     </div>
@@ -330,11 +330,11 @@
     }
 
     async function submitTaskProof(taskId) {
-        const proof = document.getElementById(`proof-link-${taskId}`).value;
-        if(!proof) return alert("Please paste the proof link!");
+        const rawText = document.getElementById(`proof-link-${taskId}`).value.trim();
+        if(!rawText) return alert("Please paste the review share text or link!");
 
         const { error } = await _supabase.from('submissions').insert([
-            { task_id: taskId, user_id: currentUser.id, proof_link: proof }
+            { task_id: taskId, user_id: currentUser.id, proof_link: rawText }
         ]);
 
         if(!error) {
@@ -390,7 +390,7 @@
             wds.forEach(w => {
                 html += `<div class="bg-white p-2.5 rounded-xl border text-xs flex justify-between">
                     <span>Rs. ${w.amount} PKR</span>
-                    <span class="font-bold ${w.status === 'approved' ? 'text-emerald-600' : 'text-amber-600'}">${w.status}</span>
+                    <span class="font-bold ${w.status === 'approved' ? 'text-emerald-600' : 'text-amber-600'}">${s.status}</span>
                 </div>`;
             });
         } else html += '<p class="text-[11px] text-slate-400">No withdrawal history found.</p>';
