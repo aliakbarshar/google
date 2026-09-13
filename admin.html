@@ -30,7 +30,7 @@
             <input type="text" id="task-target-gmail" placeholder="Target Gmail Account" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white">
             <input type="url" id="task-maps-link" placeholder="Google Maps Location Link" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white">
             <textarea id="task-review-txt" rows="2" placeholder="Review Comment Text" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white"></textarea>
-            <button onclick="sendTask()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs">Assign Task (Rs. 20 Reward)</button>
+            <button onclick="sendTask()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-emerald-700">Assign Task (Rs. 20 Reward)</button>
         </section>
 
         <!-- Pending Submissions -->
@@ -99,15 +99,22 @@
         const { data: subs } = await _supabase.from('submissions').select('*, tasks(*), profiles(*)').eq('status', 'pending');
         const subsList = document.getElementById('admin-subs-list');
         subsList.innerHTML = '';
+
         if(subs && subs.length > 0) {
             subs.forEach(s => {
+                // Extract URL using Regex if full share message is submitted
+                const rawProof = s.proof_link || '';
+                const matchUrl = rawProof.match(/(https?:\/\/[^\s]+)/g);
+                const targetUrl = matchUrl ? matchUrl[0] : rawProof;
+
                 subsList.innerHTML += `
-                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-xs flex justify-between items-center">
-                        <div>
-                            <p class="font-bold text-white">${s.profiles?.full_name} (${s.profiles?.email})</p>
-                            <a href="${s.proof_link}" target="_blank" class="text-blue-400 underline">View Proof Link ↗</a>
+                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-xs flex justify-between items-center gap-3">
+                        <div class="space-y-1 overflow-hidden">
+                            <p class="font-bold text-white">${s.profiles?.full_name || 'User'} (${s.profiles?.email})</p>
+                            <p class="text-slate-300 font-mono text-[11px] bg-slate-800 p-2 rounded break-words select-all">${rawProof}</p>
+                            ${targetUrl ? `<a href="${targetUrl}" target="_blank" class="inline-block text-blue-400 underline font-bold mt-1">Open Review Link ↗</a>` : ''}
                         </div>
-                        <button onclick="approveSub(${s.id}, '${s.user_id}', ${s.task_id})" class="bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg">Approve (+Rs. 20)</button>
+                        <button onclick="approveSub(${s.id}, '${s.user_id}', ${s.task_id})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-xl shrink-0">Approve (+Rs. 20)</button>
                     </div>`;
             });
         } else subsList.innerHTML = '<p class="text-slate-500 text-xs">No pending review submissions.</p>';
