@@ -17,17 +17,24 @@
             <span id="admin-user" class="text-xs text-slate-400">Loading...</span>
         </header>
 
-        <!-- Registered Users & Details -->
+        <!-- User Filter & Details Card -->
         <section class="bg-slate-800 p-4 rounded-2xl border border-slate-700 space-y-3">
-            <h2 class="font-bold text-xs text-emerald-400">👥 Registered Users & Gmail Accounts</h2>
-            <div id="users-detail-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
+            <h2 class="font-bold text-xs text-emerald-400">👥 View & Inspect Specific User</h2>
+            <select id="user-inspect-select" onchange="renderSelectedUserCard()" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none">
+                <option value="">-- Select a user to view details --</option>
+            </select>
+            <div id="selected-user-card" class="hidden bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-2 text-xs">
+                <!-- Dynamically Rendered User Details -->
+            </div>
         </section>
 
         <!-- Create Task -->
         <section class="bg-slate-800 p-4 rounded-2xl border border-slate-700 space-y-3">
             <h2 class="font-bold text-xs text-emerald-400">➕ Assign Task to User</h2>
-            <select id="task-user-select" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white"></select>
-            <input type="text" id="task-target-gmail" placeholder="Target Gmail Account" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white">
+            <select id="task-user-select" onchange="onUserSelectChange()" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none"></select>
+            <select id="task-target-gmail-select" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none">
+                <option value="">-- Select Target Gmail --</option>
+            </select>
             <input type="url" id="task-maps-link" placeholder="Google Maps Location Link" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white">
             <textarea id="task-review-txt" rows="2" placeholder="Review Comment Text" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white"></textarea>
             <button onclick="sendTask()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-emerald-700">Assign Task (Rs. 20 Reward)</button>
@@ -51,6 +58,7 @@
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZ2x3eHBwZ3pkamlybnZ2bGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNzg1NTksImV4cCI6MjEwNDg1NDU1OX0.ZnQm9NqG4UMU7BNadusvKN0s8CU4Evkzxzk2iJckpO4';
     
     let _supabase = null;
+    let allUsers = [];
 
     function initAdmin(retries = 5) {
         if (window.supabase && typeof window.supabase.createClient === 'function') {
@@ -71,29 +79,20 @@
     }
 
     async function loadAdminData() {
-        // Fetch Users
         const { data: users } = await _supabase.from('profiles').select('*');
-        const userList = document.getElementById('users-detail-list');
-        const select = document.getElementById('task-user-select');
-        userList.innerHTML = '';
-        select.innerHTML = '<option value="">-- Select User --</option>';
+        allUsers = users || [];
 
-        if(users) {
-            users.forEach(u => {
-                select.innerHTML += `<option value="${u.id}">${u.full_name || u.email} (${u.phone || 'No phone'})</option>`;
-                const gmailBadge = u.gmail_accounts ? u.gmail_accounts.join(', ') : 'No Gmail added';
-                userList.innerHTML += `
-                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-xs space-y-1">
-                        <div class="flex justify-between font-bold text-emerald-300">
-                            <span>${u.full_name || 'No Name'} (${u.email})</span>
-                            <span>Balance: Rs. ${u.balance || 0}</span>
-                        </div>
-                        <p class="text-slate-400">Phone: ${u.phone || 'N/A'} | Country: ${u.country || 'N/A'}</p>
-                        <p class="text-slate-400">Payment Details: ${u.bank_details || 'N/A'}</p>
-                        <p class="text-blue-300 font-mono">Gmail Accounts: ${gmailBadge}</p>
-                    </div>`;
-            });
-        }
+        const inspectSelect = document.getElementById('user-inspect-select');
+        const taskSelect = document.getElementById('task-user-select');
+
+        inspectSelect.innerHTML = '<option value="">-- Select a user to view details --</option>';
+        taskSelect.innerHTML = '<option value="">-- Select User --</option>';
+
+        allUsers.forEach(u => {
+            const label = `${u.full_name || u.email} (${u.phone || 'No Phone'})`;
+            inspectSelect.innerHTML += `<option value="${u.id}">${label}</option>`;
+            taskSelect.innerHTML += `<option value="${u.id}">${label}</option>`;
+        });
 
         // Fetch Submissions
         const { data: subs } = await _supabase.from('submissions').select('*, tasks(*), profiles(*)').eq('status', 'pending');
@@ -102,19 +101,21 @@
 
         if(subs && subs.length > 0) {
             subs.forEach(s => {
-                // Extract URL using Regex if full share message is submitted
                 const rawProof = s.proof_link || '';
                 const matchUrl = rawProof.match(/(https?:\/\/[^\s]+)/g);
                 const targetUrl = matchUrl ? matchUrl[0] : rawProof;
 
                 subsList.innerHTML += `
-                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-xs flex justify-between items-center gap-3">
-                        <div class="space-y-1 overflow-hidden">
+                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                        <div class="space-y-1 overflow-hidden w-full">
                             <p class="font-bold text-white">${s.profiles?.full_name || 'User'} (${s.profiles?.email})</p>
                             <p class="text-slate-300 font-mono text-[11px] bg-slate-800 p-2 rounded break-words select-all">${rawProof}</p>
                             ${targetUrl ? `<a href="${targetUrl}" target="_blank" class="inline-block text-blue-400 underline font-bold mt-1">Open Review Link ↗</a>` : ''}
                         </div>
-                        <button onclick="approveSub(${s.id}, '${s.user_id}', ${s.task_id})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-xl shrink-0">Approve (+Rs. 20)</button>
+                        <div class="flex gap-2 shrink-0">
+                            <button onclick="approveSub(${s.id}, '${s.user_id}', ${s.task_id})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-xl text-xs">Approve (+20)</button>
+                            <button onclick="rejectSub(${s.id}, ${s.task_id})" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-2 rounded-xl text-xs">Reject ✕</button>
+                        </div>
                     </div>`;
             });
         } else subsList.innerHTML = '<p class="text-slate-500 text-xs">No pending review submissions.</p>';
@@ -137,13 +138,67 @@
         } else wdList.innerHTML = '<p class="text-slate-500 text-xs">No pending withdrawal requests.</p>';
     }
 
+    async function renderSelectedUserCard() {
+        const uid = document.getElementById('user-inspect-select').value;
+        const card = document.getElementById('selected-user-card');
+
+        if(!uid) {
+            card.classList.add('hidden');
+            return;
+        }
+
+        const user = allUsers.find(u => u.id === uid);
+        if(!user) return;
+
+        // Fetch completed tasks count for this user
+        const { count } = await _supabase.from('submissions')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', uid)
+            .eq('status', 'approved');
+
+        const gmails = user.gmail_accounts && user.gmail_accounts.length > 0 
+            ? user.gmail_accounts.join(', ') 
+            : 'No Gmail Added';
+
+        card.innerHTML = `
+            <div class="flex justify-between items-center border-b border-slate-700 pb-2">
+                <span class="font-bold text-emerald-400 text-sm">${user.full_name || 'No Name'}</span>
+                <span class="bg-emerald-950 text-emerald-400 font-bold px-2.5 py-1 rounded-lg">Balance: Rs. ${user.balance || 0}</span>
+            </div>
+            <p>📧 <strong>Email:</strong> ${user.email}</p>
+            <p>📞 <strong>Phone:</strong> ${user.phone || 'N/A'}</p>
+            <p>🌍 <strong>Country:</strong> ${user.country || 'N/A'}</p>
+            <p>🏦 <strong>Bank Details:</strong> ${user.bank_details || 'N/A'}</p>
+            <p class="text-blue-300">✉️ <strong>Registered Gmails:</strong> ${gmails}</p>
+            <div class="bg-slate-800 p-2 rounded-lg mt-2 text-center text-emerald-300 font-bold">
+                ✅ Completed Tasks: ${count || 0}
+            </div>
+        `;
+        card.classList.remove('hidden');
+    }
+
+    function onUserSelectChange() {
+        const uid = document.getElementById('task-user-select').value;
+        const gmailSelect = document.getElementById('task-target-gmail-select');
+        gmailSelect.innerHTML = '<option value="">-- Select Target Gmail --</option>';
+
+        const user = allUsers.find(u => u.id === uid);
+        if(user && user.gmail_accounts && user.gmail_accounts.length > 0) {
+            user.gmail_accounts.forEach(g => {
+                gmailSelect.innerHTML += `<option value="${g}">${g}</option>`;
+            });
+        }
+    }
+
     async function sendTask() {
         const userId = document.getElementById('task-user-select').value;
-        const targetGmail = document.getElementById('task-target-gmail').value;
+        const targetGmail = document.getElementById('task-target-gmail-select').value;
         const mapsLink = document.getElementById('task-maps-link').value;
         const reviewText = document.getElementById('task-review-txt').value;
 
-        if(!userId || !mapsLink || !reviewText) return alert("Please complete all required fields!");
+        if(!userId || !targetGmail || !mapsLink || !reviewText) {
+            return alert("Please complete all required fields including selecting a Target Gmail!");
+        }
 
         const { error } = await _supabase.from('tasks').insert([{
             assigned_user_id: userId,
@@ -166,6 +221,15 @@
         await _supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
 
         alert("Task approved! Rs. 20 credited to user balance.");
+        loadAdminData();
+    }
+
+    async function rejectSub(subId, taskId) {
+        if(!confirm("Are you sure you want to reject this submission?")) return;
+        await _supabase.from('submissions').update({ status: 'rejected' }).eq('id', subId);
+        await _supabase.from('tasks').update({ status: 'rejected' }).eq('id', taskId);
+
+        alert("Task submission rejected.");
         loadAdminData();
     }
 
