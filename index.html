@@ -23,7 +23,6 @@
 
         <!-- AUTH BLOCK (Login / Register) -->
         <div id="auth-container" class="space-y-4">
-            <!-- Tabs -->
             <div class="grid grid-cols-2 bg-white p-1 rounded-2xl border text-xs font-bold text-center">
                 <button onclick="switchAuthTab('login')" id="btab-login" class="py-2 rounded-xl bg-slate-900 text-white">Login</button>
                 <button onclick="switchAuthTab('register')" id="btab-register" class="py-2 rounded-xl text-slate-500">Register</button>
@@ -61,46 +60,51 @@
                     <p class="text-[11px] opacity-80 uppercase font-bold">Available Balance</p>
                     <h2 class="text-2xl font-black" id="user-balance-display">Rs. 0</h2>
                 </div>
-                <button onclick="openWithdrawModal()" class="bg-white text-emerald-800 font-bold px-4 py-2 rounded-xl text-xs shadow hover:bg-emerald-50">Withdraw</button>
+                <button onclick="switchTab('cashout')" class="bg-white text-emerald-800 font-bold px-4 py-2 rounded-xl text-xs shadow hover:bg-emerald-50">Cash Out</button>
             </div>
 
-            <!-- Welcome Notice -->
-            <div class="bg-white p-4 rounded-2xl border shadow space-y-2">
-                <h3 class="font-bold text-xs text-slate-700">🌟 Welcome!</h3>
-                <p class="text-xs text-slate-500 leading-relaxed">
-                    Post reviews on assigned Google Maps locations using your registered Gmail accounts and earn Rs. 20 per approved review.
-                </p>
+            <!-- Navigation Tabs (Tasks, History, Cash Out, Profile) -->
+            <div class="grid grid-cols-4 bg-white p-1 rounded-2xl border text-xs font-bold text-center gap-1">
+                <button onclick="switchTab('tasks')" id="tab-tasks" class="py-2 rounded-xl bg-slate-900 text-white">Tasks</button>
+                <button onclick="switchTab('history')" id="tab-history" class="py-2 rounded-xl text-slate-500">History</button>
+                <button onclick="switchTab('cashout')" id="tab-cashout" class="py-2 rounded-xl text-slate-500">Cash Out</button>
+                <button onclick="switchTab('profile')" id="tab-profile" class="py-2 rounded-xl text-slate-500">Profile</button>
             </div>
 
-            <!-- Registered Gmails Section -->
-            <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
-                <h3 class="font-bold text-xs text-slate-700">Manage Your Gmail Accounts</h3>
-                <div class="flex gap-2">
-                    <input type="email" id="new-gmail-input" placeholder="Enter your Gmail address..." class="w-full border p-2 rounded-xl text-xs outline-none">
-                    <button onclick="addGmailAccount()" class="bg-slate-900 text-white font-bold px-4 py-2 rounded-xl text-xs whitespace-nowrap">Add Gmail</button>
+            <!-- TAB 1: TASKS -->
+            <div id="sec-tasks" class="space-y-4">
+                <div class="bg-white p-4 rounded-2xl border shadow space-y-2">
+                    <h3 class="font-bold text-xs text-slate-700">🌟 Welcome!</h3>
+                    <p class="text-xs text-slate-500 leading-relaxed">
+                        Post reviews on assigned Google Maps locations using your registered Gmail accounts and earn Rs. 20 per approved review.
+                    </p>
                 </div>
-                <div id="gmails-list" class="space-y-1 pt-1">
-                    <p class="text-[11px] text-slate-400">Loading gmails...</p>
+
+                <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
+                    <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
+                        <span>Assigned Review Tasks</span>
+                        <button onclick="loadUserTasks()" class="text-[10px] text-blue-600 underline">Refresh</button>
+                    </h3>
+                    <div id="user-tasks-list" class="space-y-3">
+                        <p class="text-xs text-slate-400 text-center py-4">Loading tasks...</p>
+                    </div>
                 </div>
             </div>
 
-            <!-- Assigned Tasks Section -->
-            <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
+            <!-- TAB 2: HISTORY -->
+            <div id="sec-history" class="hidden bg-white p-4 rounded-2xl border shadow space-y-3">
                 <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
-                    <span>Assigned Review Tasks</span>
-                    <button onclick="loadUserTasks()" class="text-[10px] text-blue-600 underline">Refresh</button>
+                    <span>Submissions & Earnings History</span>
+                    <button onclick="loadUserHistory()" class="text-[10px] text-blue-600 underline">Refresh</button>
                 </h3>
-                <div id="user-tasks-list" class="space-y-3">
-                    <p class="text-xs text-slate-400 text-center py-4">Loading tasks...</p>
+                <div id="user-history-list" class="space-y-2">
+                    <p class="text-xs text-slate-400 text-center py-4">Loading history...</p>
                 </div>
             </div>
 
-        </div>
-
-        <!-- Withdraw Modal -->
-        <div id="withdraw-modal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 z-50">
-            <div class="bg-white w-full max-w-md p-5 rounded-2xl shadow-xl space-y-3">
-                <h3 class="font-bold text-sm text-slate-700">Request Balance Withdrawal</h3>
+            <!-- TAB 3: CASH OUT -->
+            <div id="sec-cashout" class="hidden bg-white p-4 rounded-2xl border shadow space-y-3">
+                <h3 class="font-bold text-xs text-slate-700">Request Balance Withdrawal</h3>
                 <div class="space-y-2">
                     <div>
                         <label class="text-[10px] text-slate-500 font-bold block mb-1">Payment Method:</label>
@@ -118,12 +122,28 @@
                         <label class="text-[10px] text-slate-500 font-bold block mb-1">Amount (PKR):</label>
                         <input type="number" id="w-amount" placeholder="Enter amount to withdraw" class="w-full border p-2 rounded-xl text-xs outline-none">
                     </div>
+                    <button onclick="submitWithdrawal()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-emerald-700">Submit Cash Out Request</button>
                 </div>
-                <div class="flex gap-2 pt-2">
-                    <button onclick="submitWithdrawal()" class="w-1/2 bg-emerald-600 text-white font-bold py-2 rounded-xl text-xs">Submit Request</button>
-                    <button onclick="closeWithdrawModal()" class="w-1/2 bg-slate-200 text-slate-700 font-bold py-2 rounded-xl text-xs">Cancel</button>
+                <div class="pt-3 border-t">
+                    <h4 class="font-bold text-[11px] text-slate-600 mb-2">Previous Withdrawal Requests</h4>
+                    <div id="user-withdrawals-history" class="space-y-2">
+                        <p class="text-[11px] text-slate-400">Loading requests...</p>
+                    </div>
                 </div>
             </div>
+
+            <!-- TAB 4: PROFILE -->
+            <div id="sec-profile" class="hidden bg-white p-4 rounded-2xl border shadow space-y-3">
+                <h3 class="font-bold text-xs text-slate-700">Manage Your Gmail Accounts</h3>
+                <div class="flex gap-2">
+                    <input type="email" id="new-gmail-input" placeholder="Enter your Gmail address..." class="w-full border p-2 rounded-xl text-xs outline-none">
+                    <button onclick="addGmailAccount()" class="bg-slate-900 text-white font-bold px-4 py-2 rounded-xl text-xs whitespace-nowrap">Add Gmail</button>
+                </div>
+                <div id="gmails-list" class="space-y-1 pt-1">
+                    <p class="text-[11px] text-slate-400">Loading gmails...</p>
+                </div>
+            </div>
+
         </div>
 
         <!-- Footer -->
@@ -178,6 +198,18 @@
         }
     }
 
+    function switchTab(tabName) {
+        ['tasks', 'history', 'cashout', 'profile'].forEach(t => {
+            document.getElementById(`sec-${t}`).classList.add('hidden');
+            document.getElementById(`tab-${t}`).className = "py-2 rounded-xl text-slate-500";
+        });
+        document.getElementById(`sec-${tabName}`).classList.remove('hidden');
+        document.getElementById(`tab-${tabName}`).className = "py-2 rounded-xl bg-slate-900 text-white font-bold";
+
+        if(tabName === 'history') loadUserHistory();
+        if(tabName === 'cashout') loadUserWithdrawals();
+    }
+
     async function handleLogin() {
         const email = document.getElementById('login-email').value.trim();
         const password = document.getElementById('login-pass').value.trim();
@@ -215,7 +247,6 @@
         if(prof) {
             document.getElementById('user-balance-display').innerText = `Rs. ${prof.balance || 0}`;
             
-            // Gmails list
             const gList = document.getElementById('gmails-list');
             if(prof.gmail_accounts && prof.gmail_accounts.length > 0) {
                 let html = '';
@@ -273,7 +304,6 @@
         if(tasks && tasks.length > 0) {
             let html = '';
             for(let t of tasks) {
-                // Check if already submitted
                 const { data: sub } = await _supabase.from('submissions').select('status').eq('task_id', t.id).eq('user_id', currentUser.id).maybeSingle();
                 
                 let actionHtml = '';
@@ -282,7 +312,7 @@
                 } else {
                     actionHtml = `
                         <div class="space-y-2 pt-2 border-t">
-                            <input type="text" id="proof-${t.id}" placeholder="Paste your Review Proof Link or Screenshot URL..." class="w-full border p-2 rounded-xl text-xs outline-none">
+                            <input type="text" id="proof-${t.id}" placeholder="Paste your Review Proof Link..." class="w-full border p-2 rounded-xl text-xs outline-none">
                             <button onclick="submitTaskProof(${t.id})" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-1.5 rounded-xl text-xs">Submit Proof</button>
                         </div>
                     `;
@@ -326,12 +356,41 @@
         } else alert("Error: " + error.message);
     }
 
-    function openWithdrawModal() {
-        document.getElementById('withdraw-modal').classList.remove('hidden');
-    }
+    async function loadUserHistory() {
+        const container = document.getElementById('user-history-list');
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Loading history...</p>';
 
-    function closeWithdrawModal() {
-        document.getElementById('withdraw-modal').classList.add('hidden');
+        const { data: subs, error } = await _supabase.from('submissions')
+            .select('*, tasks(review_text, reward)')
+            .eq('user_id', currentUser.id)
+            .order('id', { ascending: false });
+
+        if(error) return container.innerHTML = `<p class="text-xs text-red-500">Error: ${error.message}</p>`;
+
+        if(subs && subs.length > 0) {
+            let html = '';
+            subs.forEach(s => {
+                let badgeColor = 'bg-amber-100 text-amber-700';
+                if(s.status === 'approved') badgeColor = 'bg-emerald-100 text-emerald-700';
+                if(s.status === 'rejected') badgeColor = 'bg-red-100 text-red-700';
+
+                html += `
+                    <div class="bg-slate-50 p-2.5 rounded-xl border text-xs flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-slate-700">Task #${s.task_id}</span>
+                            <p class="text-[10px] text-slate-400 truncate max-w-[220px]">Proof: ${s.proof_link}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-bold px-2 py-0.5 rounded text-[10px] ${badgeColor}">${s.status}</span>
+                            <p class="text-[10px] font-bold text-slate-600 mt-1">+Rs. ${s.tasks?.reward || 20}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No submission history found.</p>';
+        }
     }
 
     async function submitWithdrawal() {
@@ -356,10 +415,45 @@
 
         if(!error) {
             alert("Withdrawal request submitted successfully!");
-            closeWithdrawModal();
             document.getElementById('w-account').value = '';
             document.getElementById('w-amount').value = '';
+            loadUserWithdrawals();
+            loadUserData();
         } else alert("Error: " + error.message);
+    }
+
+    async function loadUserWithdrawals() {
+        const container = document.getElementById('user-withdrawals-history');
+        container.innerHTML = '<p class="text-[11px] text-slate-400 text-center">Loading requests...</p>';
+
+        const { data: wList, error } = await _supabase.from('withdrawals')
+            .select('*')
+            .eq('user_id', currentUser.id)
+            .order('id', { ascending: false });
+
+        if(error) return container.innerHTML = `<p class="text-[11px] text-red-500">Error: ${error.message}</p>`;
+
+        if(wList && wList.length > 0) {
+            let html = '';
+            wList.forEach(w => {
+                let badgeColor = 'bg-amber-100 text-amber-700';
+                if(w.status === 'approved') badgeColor = 'bg-emerald-100 text-emerald-700';
+                if(w.status === 'rejected') badgeColor = 'bg-red-100 text-red-700';
+
+                html += `
+                    <div class="bg-slate-50 p-2.5 rounded-xl border text-xs flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-slate-700">Rs. ${w.amount} (${w.method})</span>
+                            <p class="text-[10px] text-slate-400 font-mono">A/C: ${w.account_number}</p>
+                        </div>
+                        <span class="font-bold px-2 py-0.5 rounded text-[10px] ${badgeColor}">${w.status}</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<p class="text-[11px] text-slate-400 text-center">No cash out requests yet.</p>';
+        }
     }
 
     async function logoutUser() {
