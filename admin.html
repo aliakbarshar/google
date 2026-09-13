@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Google Review System</title>
+    <title>Admin Dashboard & Client Order Manager</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,301 +11,284 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4">
 
-    <div class="max-w-3xl mx-auto space-y-6">
-        <!-- Header -->
-        <header class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
-            <h1 class="font-bold text-emerald-400 text-base">⚡ Admin Control Panel</h1>
-            <div class="flex items-center gap-3">
-                <span id="admin-user" class="text-xs text-slate-400">Loading...</span>
-                <button onclick="adminLogout()" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-700/50 px-2.5 py-1 rounded-lg text-xs font-bold transition">Logout 🔒</button>
+    <!-- Admin Auth Modal -->
+    <div id="admin-auth-modal" class="fixed inset-0 bg-slate-950/95 flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl w-full max-w-md space-y-4">
+            <h2 class="text-xl font-bold text-emerald-400 text-center">🛡️ Admin Portal Sign-In</h2>
+            <p class="text-xs text-slate-400 text-center">Enter your Administrator credentials to manage orders & tasks.</p>
+            
+            <div class="space-y-3">
+                <input type="email" id="admin-email-input" placeholder="Admin Email" value="aliakbarshar@gmail.com" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                <input type="password" id="admin-pass-input" placeholder="Password" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                <button onclick="handleAdminLogin()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition">Access Dashboard 🔓</button>
+                <p id="admin-auth-err" class="text-xs text-red-400 text-center hidden"></p>
             </div>
+        </div>
+    </div>
+
+    <!-- Main Admin Dashboard Area -->
+    <div class="max-w-6xl mx-auto space-y-6">
+        
+        <!-- Top Bar -->
+        <header class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+            <div>
+                <h1 class="font-bold text-emerald-400 text-xl">⚙️ Platform Admin Control Center</h1>
+                <p id="admin-status-lbl" class="text-xs text-slate-400">Status: Authenticating...</p>
+            </div>
+            <button onclick="adminLogout()" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-700/50 px-3 py-1.5 rounded-lg text-xs font-bold">Logout 🔒</button>
         </header>
 
-        <!-- Stats Counter Section -->
-        <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+        <!-- Navigation Tabs -->
+        <div class="flex gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
+            <button id="tab-btn-client-orders" onclick="switchAdminTab('client-orders')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500">
+                💼 Client Orders Manager
+            </button>
+            <button id="tab-btn-tasks" onclick="switchAdminTab('tasks')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
+                📌 Worker Tasks Setup
+            </button>
+            <button id="tab-btn-approvals" onclick="switchAdminTab('approvals')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
+                ✅ Proof Approvals
+            </button>
+        </div>
+
+        <!-- ================= TAB 1: CLIENT ORDERS MANAGER ================= -->
+        <section id="tab-content-client-orders" class="space-y-4">
+            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                 <div>
-                    <p class="text-xs text-slate-400 font-bold">Total Registered Users</p>
-                    <h3 id="total-users-count" class="text-2xl font-black text-emerald-400">0</h3>
+                    <h2 class="font-bold text-base text-emerald-400">📩 Client Business Review Requests</h2>
+                    <p class="text-xs text-slate-400">View incoming client campaigns, review target requirements, and contact clients directly on WhatsApp.</p>
                 </div>
-                <div class="bg-emerald-950 text-emerald-400 p-3 rounded-xl font-bold text-lg">👥</div>
+                <button onclick="loadAdminClientOrders()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ Refresh Orders</button>
             </div>
-            <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
-                <div>
-                    <p class="text-xs text-slate-400 font-bold">Pending Withdrawals</p>
-                    <h3 id="total-pending-wd-count" class="text-2xl font-black text-blue-400">0</h3>
+
+            <!-- Client Orders List Grid -->
+            <div id="admin-client-orders-container" class="space-y-4">
+                <p class="text-xs text-slate-500">Loading client orders...</p>
+            </div>
+        </section>
+
+        <!-- ================= TAB 2: WORKER TASKS SETUP ================= -->
+        <section id="tab-content-tasks" class="hidden space-y-4">
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">➕ Publish New Worker Task</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" id="task-title" placeholder="Task Title (e.g., Leave 5-Star Review)" class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none">
+                    <input type="number" id="task-reward" placeholder="Reward per Review (PKR)" class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none">
+                    <input type="url" id="task-link" placeholder="Google Maps Link" class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none md:col-span-2">
+                    <textarea id="task-desc" placeholder="Instructions / Comments for Workers" class="bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none md:col-span-2 h-20"></textarea>
                 </div>
-                <div class="bg-blue-950 text-blue-400 p-3 rounded-xl font-bold text-lg">💸</div>
+                <button onclick="publishWorkerTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs">Publish Task to Workers 🚀</button>
             </div>
         </section>
 
-        <!-- User Filter & Details Card -->
-        <section class="bg-slate-800 p-4 rounded-2xl border border-slate-700 space-y-3">
-            <h2 class="font-bold text-xs text-emerald-400">👥 View & Inspect Specific User</h2>
-            <select id="user-inspect-select" onchange="renderSelectedUserCard()" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none">
-                <option value="">-- Select a user to view details --</option>
-            </select>
-            <div id="selected-user-card" class="hidden bg-slate-900 p-4 rounded-xl border border-slate-700 space-y-2 text-xs">
-                <!-- Dynamically Rendered User Details -->
+        <!-- ================= TAB 3: PROOF APPROVALS ================= -->
+        <section id="tab-content-approvals" class="hidden space-y-4">
+            <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">🔍 Review Worker Submissions</h2>
+                <div id="submissions-list" class="space-y-3">
+                    <p class="text-xs text-slate-500">Loading worker proof submissions...</p>
+                </div>
             </div>
         </section>
 
-        <!-- Create Task -->
-        <section class="bg-slate-800 p-4 rounded-2xl border border-slate-700 space-y-3">
-            <h2 class="font-bold text-xs text-emerald-400">➕ Assign Task to User</h2>
-            <select id="task-user-select" onchange="onUserSelectChange()" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none"></select>
-            <select id="task-target-gmail-select" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none">
-                <option value="">-- Select Target Gmail --</option>
-            </select>
-            <input type="url" id="task-maps-link" placeholder="Google Maps Location Link" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white">
-            <textarea id="task-review-txt" rows="2" placeholder="Review Comment Text" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white"></textarea>
-            <button onclick="sendTask()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-emerald-700">Assign Task (Rs. 20 Reward)</button>
-        </section>
+    </div>
 
-        <!-- Pending Submissions -->
-        <section class="bg-slate-800 p-4 rounded-2xl border border-slate-700 space-y-3">
-            <h2 class="font-bold text-xs text-amber-400">📥 Pending Review Proofs</h2>
-            <div id="admin-subs-list" class="space-y-2"></div>
-        </section>
-
-        <!-- Pending Withdrawals -->
-        <section class="bg-slate-800 p-4 rounded-2xl border border-slate-700 space-y-3">
-            <h2 class="font-bold text-xs text-blue-400">💸 Pending Withdrawal Requests</h2>
-            <div id="admin-wd-list" class="space-y-2"></div>
-        </section>
+    <!-- Client Order Details Modal -->
+    <div id="comments-modal" class="fixed inset-0 bg-slate-950/90 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl w-full max-w-lg space-y-4 max-h-[80vh] overflow-y-auto">
+            <h3 class="font-bold text-emerald-400 text-base border-b border-slate-700 pb-2">📝 Client Drafted Comments</h3>
+            <div id="modal-comments-body" class="space-y-2 text-xs">
+                <!-- Comments dynamically rendered here -->
+            </div>
+            <button onclick="document.getElementById('comments-modal').classList.add('hidden')" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 rounded-xl text-xs">Close</button>
+        </div>
     </div>
 
     <script>
     const SUPABASE_URL = 'https://zpglwxppgzdjirnvvlfg.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZ2x3eHBwZ3pkamlybnZ2bGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNzg1NTksImV4cCI6MjEwNDg1NDU1OX0.ZnQm9NqG4UMU7BNadusvKN0s8CU4Evkzxzk2iJckpO4';
-    
-    const ADMIN_PASSWORD = "Ali2020@";
-
-    function authenticateAdminPassword() {
-        let savedAuth = sessionStorage.getItem("admin_authenticated");
-        if (savedAuth === "true") return true;
-
-        let pass = prompt("Enter Admin Secret Password:");
-        if (pass === ADMIN_PASSWORD) {
-            sessionStorage.setItem("admin_authenticated", "true");
-            return true;
-        } else {
-            alert("Incorrect Password! Access Denied.");
-            window.location.href = "index.html";
-            return false;
-        }
-    }
-
-    function adminLogout() {
-        sessionStorage.removeItem("admin_authenticated");
-        window.location.href = "index.html";
-    }
 
     let _supabase = null;
-    let allUsers = [];
 
-    function initAdmin(retries = 5) {
-        if (!authenticateAdminPassword()) return;
-
+    function initAdminPortal() {
         if (window.supabase && typeof window.supabase.createClient === 'function') {
             _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-            checkAdminAccess();
-        } else if (retries > 0) setTimeout(() => initAdmin(retries - 1), 300);
+            checkAdminSession();
+        } else {
+            setTimeout(initAdminPortal, 300);
+        }
     }
 
-    async function checkAdminAccess() {
+    async function checkAdminSession() {
         const { data: { user } } = await _supabase.auth.getUser();
-        if(!user || user.email !== 'aliakbarshar@gmail.com') {
-            alert("Access restricted! Admin authorization required.");
-            window.location.href = "index.html";
-            return;
+        if (user && user.email === 'aliakbarshar@gmail.com') {
+            document.getElementById('admin-auth-modal').classList.add('hidden');
+            document.getElementById('admin-status-lbl').innerText = `Logged in: ${user.email}`;
+            loadAdminClientOrders();
+        } else {
+            document.getElementById('admin-auth-modal').classList.remove('hidden');
         }
-        document.getElementById('admin-user').innerText = user.email;
-        loadAdminData();
     }
 
-    async function loadAdminData() {
-        // Fetch All Users & Total Count
-        const { data: users, count } = await _supabase.from('profiles').select('*', { count: 'exact' });
-        allUsers = users || [];
+    async function handleAdminLogin() {
+        const email = document.getElementById('admin-email-input').value.trim();
+        const password = document.getElementById('admin-pass-input').value.trim();
+        const errBox = document.getElementById('admin-auth-err');
 
-        document.getElementById('total-users-count').innerText = count || allUsers.length || 0;
+        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+        if (error) {
+            errBox.innerText = error.message;
+            errBox.classList.remove('hidden');
+        } else {
+            checkAdminSession();
+        }
+    }
 
-        const inspectSelect = document.getElementById('user-inspect-select');
-        const taskSelect = document.getElementById('task-user-select');
+    async function adminLogout() {
+        await _supabase.auth.signOut();
+        location.reload();
+    }
 
-        inspectSelect.innerHTML = '<option value="">-- Select a user to view details --</option>';
-        taskSelect.innerHTML = '<option value="">-- Select User --</option>';
-
-        allUsers.forEach(u => {
-            const label = `${u.full_name || u.email} (${u.phone || 'No Phone'})`;
-            inspectSelect.innerHTML += `<option value="${u.id}">${label}</option>`;
-            taskSelect.innerHTML += `<option value="${u.id}">${label}</option>`;
+    function switchAdminTab(tabName) {
+        const tabs = ['client-orders', 'tasks', 'approvals'];
+        tabs.forEach(t => {
+            const btn = document.getElementById(`tab-btn-${t}`);
+            const content = document.getElementById(`tab-content-${t}`);
+            if (t === tabName) {
+                btn.className = "bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500";
+                content.classList.remove('hidden');
+            } else {
+                btn.className = "bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700";
+                content.classList.add('hidden');
+            }
         });
-
-        // Fetch Submissions
-        const { data: subs } = await _supabase.from('submissions').select('*, tasks(*), profiles(*)').eq('status', 'pending');
-        const subsList = document.getElementById('admin-subs-list');
-        subsList.innerHTML = '';
-
-        if(subs && subs.length > 0) {
-            subs.forEach(s => {
-                const rawProof = s.proof_link || '';
-                const matchUrl = rawProof.match(/(https?:\/\/[^\s]+)/g);
-                const targetUrl = matchUrl ? matchUrl[0] : rawProof;
-
-                subsList.innerHTML += `
-                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
-                        <div class="space-y-1 overflow-hidden w-full">
-                            <p class="font-bold text-white">${s.profiles?.full_name || 'User'} (${s.profiles?.email})</p>
-                            <p class="text-slate-300 font-mono text-[11px] bg-slate-800 p-2 rounded break-words select-all">${rawProof}</p>
-                            ${targetUrl ? `<a href="${targetUrl}" target="_blank" class="inline-block text-blue-400 underline font-bold mt-1">Open Review Link ↗</a>` : ''}
-                        </div>
-                        <div class="flex gap-2 shrink-0">
-                            <button onclick="approveSub(${s.id}, '${s.user_id}', ${s.task_id})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-xl text-xs">Approve (+20)</button>
-                            <button onclick="rejectSub(${s.id}, ${s.task_id})" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-2 rounded-xl text-xs">Reject ✕</button>
-                        </div>
-                    </div>`;
-            });
-        } else subsList.innerHTML = '<p class="text-slate-500 text-xs">No pending review submissions.</p>';
-
-        // Fetch Withdrawals
-        const { data: wds } = await _supabase.from('withdrawals').select('*, profiles(*)').eq('status', 'pending');
-        const wdList = document.getElementById('admin-wd-list');
-        wdList.innerHTML = '';
-        document.getElementById('total-pending-wd-count').innerText = wds ? wds.length : 0;
-
-        if(wds && wds.length > 0) {
-            wds.forEach(w => {
-                wdList.innerHTML += `
-                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-xs flex justify-between items-center gap-2">
-                        <div>
-                            <p class="font-bold text-white">${w.profiles?.full_name || 'User'} - Rs. ${w.amount}</p>
-                            <p class="text-slate-400 text-[11px]">${w.payment_method_details}</p>
-                        </div>
-                        <div class="flex gap-2 shrink-0">
-                            <button onclick="approveWd(${w.id}, '${w.user_id}', ${w.amount})" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg">Approve & Deduct</button>
-                            <button onclick="rejectWd(${w.id})" class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-lg">Reject ✕</button>
-                        </div>
-                    </div>`;
-            });
-        } else wdList.innerHTML = '<p class="text-slate-500 text-xs">No pending withdrawal requests.</p>';
     }
 
-    async function renderSelectedUserCard() {
-        const uid = document.getElementById('user-inspect-select').value;
-        const card = document.getElementById('selected-user-card');
+    // ================= CLIENT ORDERS MANAGEMENT FUNCTIONS =================
 
-        if(!uid) {
-            card.classList.add('hidden');
+    async function loadAdminClientOrders() {
+        const container = document.getElementById('admin-client-orders-container');
+        container.innerHTML = '<p class="text-xs text-slate-500">Fetching latest client requests...</p>';
+
+        const { data: orders, error } = await _supabase.from('client_orders')
+            .select('*, profiles(email, raw_user_meta_data)')
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            container.innerHTML = `<p class="text-xs text-red-400">Failed to load orders: ${error.message}</p>`;
             return;
         }
 
-        const user = allUsers.find(u => u.id === uid);
-        if(!user) return;
+        if (!orders || orders.length === 0) {
+            container.innerHTML = '<p class="text-xs text-slate-500">No client orders registered yet.</p>';
+            return;
+        }
 
-        const { count } = await _supabase.from('submissions')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', uid)
-            .eq('status', 'approved');
+        container.innerHTML = '';
 
-        const gmails = user.gmail_accounts && user.gmail_accounts.length > 0 
-            ? user.gmail_accounts.join(', ') 
-            : 'No Gmail Added';
+        orders.forEach(ord => {
+            const clientEmail = ord.profiles?.email || 'Unknown Email';
+            const clientPhone = ord.profiles?.raw_user_meta_data?.phone || '';
+            const commentsCount = ord.comments_list ? ord.comments_list.length : 0;
+            const encodedWaMsg = encodeURIComponent(`Hello! Regarding your order for ${ord.quantity} ${ord.review_type} Reviews (${ord.stars_rating} Stars) on Google Maps link: ${ord.google_maps_link}. Let us discuss pricing and delivery schedule.`);
 
-        card.innerHTML = `
-            <div class="flex justify-between items-center border-b border-slate-700 pb-2">
-                <span class="font-bold text-emerald-400 text-sm">${user.full_name || 'No Name'}</span>
-                <span class="bg-emerald-950 text-emerald-400 font-bold px-2.5 py-1 rounded-lg">Balance: Rs. ${user.balance || 0}</span>
-            </div>
-            <p>📧 <strong>Email:</strong> ${user.email}</p>
-            <p>📞 <strong>Phone:</strong> ${user.phone || 'N/A'}</p>
-            <p>🌍 <strong>Country:</strong> ${user.country || 'N/A'}</p>
-            <p>🏦 <strong>Bank Details:</strong> ${user.bank_details || 'N/A'}</p>
-            <p class="text-blue-300">✉️ <strong>Registered Gmails:</strong> ${gmails}</p>
-            <div class="bg-slate-800 p-2 rounded-lg mt-2 text-center text-emerald-300 font-bold">
-                ✅ Completed Tasks: ${count || 0}
-            </div>
-        `;
-        card.classList.remove('hidden');
+            const waLink = clientPhone ? `https://wa.me/${clientPhone.replace(/[^0-9]/g, '')}?text=${encodedWaMsg}` : '#';
+
+            container.innerHTML += `
+                <div class="bg-slate-800 p-5 rounded-2xl border border-slate-700 space-y-4">
+                    <!-- Header Bar -->
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-700 pb-3">
+                        <div>
+                            <span class="text-xs font-black uppercase tracking-wider px-2.5 py-1 rounded-lg ${ord.review_type === 'Positive' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-red-950 text-red-400 border border-red-800'}">
+                                ${ord.review_type} Review Request (${ord.stars_rating} ⭐)
+                            </span>
+                            <h3 class="text-sm font-bold text-slate-200 mt-2">Client: <span class="text-emerald-400">${clientEmail}</span></h3>
+                        </div>
+
+                        <!-- Status Selector -->
+                        <div class="flex items-center gap-2">
+                            <label class="text-[11px] text-slate-400">Status:</label>
+                            <select onchange="updateOrderStatus(${ord.id}, this.value)" class="bg-slate-900 border border-slate-700 text-xs text-white p-1.5 rounded-lg outline-none">
+                                <option value="Pending Contact" ${ord.status === 'Pending Contact' ? 'selected' : ''}>Pending Contact</option>
+                                <option value="Discussing Pricing" ${ord.status === 'Discussing Pricing' ? 'selected' : ''}>Discussing Pricing</option>
+                                <option value="In Progress" ${ord.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                                <option value="Completed" ${ord.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                                <option value="Cancelled" ${ord.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Details Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-slate-900/60 p-3 rounded-xl border border-slate-700/50">
+                        <div>
+                            <span class="text-slate-500 font-bold block">Target Country</span>
+                            <span class="text-slate-200 font-medium">${ord.target_country}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 font-bold block">Required Quantity</span>
+                            <span class="text-emerald-400 font-bold text-sm">${ord.quantity} Reviews</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-500 font-bold block">Custom Comments Drafted</span>
+                            <button onclick="viewCommentsModal(${ord.id})" class="text-blue-400 underline font-medium">View ${commentsCount} Custom Drafts</button>
+                        </div>
+                    </div>
+
+                    <!-- Google Maps Link -->
+                    <div class="text-xs">
+                        <span class="text-slate-400 font-bold">Google Maps Business Link:</span>
+                        <a href="${ord.google_maps_link}" target="_blank" class="text-blue-400 hover:underline break-all block mt-0.5">${ord.google_maps_link}</a>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap gap-2 pt-2 border-t border-slate-700/50">
+                        ${clientPhone ? `
+                            <a href="${waLink}" target="_blank" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5">
+                                💬 Contact Client on WhatsApp (${clientPhone})
+                            </a>
+                        ` : `
+                            <span class="text-xs text-amber-400 bg-amber-950/40 p-2 rounded-lg border border-amber-800">No Phone number provided by client</span>
+                        `}
+                    </div>
+                </div>
+            `;
+        });
     }
 
-    function onUserSelectChange() {
-        const uid = document.getElementById('task-user-select').value;
-        const gmailSelect = document.getElementById('task-target-gmail-select');
-        gmailSelect.innerHTML = '<option value="">-- Select Target Gmail --</option>';
+    async function updateOrderStatus(orderId, newStatus) {
+        const { error } = await _supabase.from('client_orders')
+            .update({ status: newStatus })
+            .eq('id', orderId);
 
-        const user = allUsers.find(u => u.id === uid);
-        if(user && user.gmail_accounts && user.gmail_accounts.length > 0) {
-            user.gmail_accounts.forEach(g => {
-                gmailSelect.innerHTML += `<option value="${g}">${g}</option>`;
+        if (error) {
+            alert("Error updating order status: " + error.message);
+        } else {
+            alert(`Order #${orderId} status updated to: ${newStatus}`);
+        }
+    }
+
+    async function viewCommentsModal(orderId) {
+        const { data: ord } = await _supabase.from('client_orders').select('comments_list').eq('id', orderId).single();
+        const modalBody = document.getElementById('modal-comments-body');
+        modalBody.innerHTML = '';
+
+        if (ord && ord.comments_list && ord.comments_list.length > 0) {
+            ord.comments_list.forEach((c, idx) => {
+                modalBody.innerHTML += `
+                    <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-700 text-slate-200 font-mono">
+                        <span class="text-emerald-400 font-bold">#${idx + 1}:</span> "${c}"
+                    </div>
+                `;
             });
-        }
-    }
-
-    async function sendTask() {
-        const userId = document.getElementById('task-user-select').value;
-        const targetGmail = document.getElementById('task-target-gmail-select').value;
-        const mapsLink = document.getElementById('task-maps-link').value;
-        const reviewText = document.getElementById('task-review-txt').value;
-
-        if(!userId || !targetGmail || !mapsLink || !reviewText) {
-            return alert("Please complete all required fields including selecting a Target Gmail!");
+        } else {
+            modalBody.innerHTML = '<p class="text-slate-500">No custom comments provided by the client.</p>';
         }
 
-        const { error } = await _supabase.from('tasks').insert([{
-            assigned_user_id: userId,
-            target_gmail: targetGmail,
-            google_maps_link: mapsLink,
-            review_text: reviewText,
-            reward: 20
-        }]);
-
-        if(!error) { alert("Task assigned successfully!"); loadAdminData(); }
-        else alert(error.message);
+        document.getElementById('comments-modal').classList.remove('hidden');
     }
 
-    async function approveSub(subId, userId, taskId) {
-        await _supabase.from('submissions').update({ status: 'approved' }).eq('id', subId);
-        await _supabase.from('tasks').update({ status: 'completed' }).eq('id', taskId);
-
-        const { data: prof } = await _supabase.from('profiles').select('balance').eq('id', userId).single();
-        const newBal = (prof?.balance || 0) + 20;
-        await _supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
-
-        alert("Task approved! Rs. 20 credited to user balance.");
-        loadAdminData();
-    }
-
-    async function rejectSub(subId, taskId) {
-        if(!confirm("Are you sure you want to reject this submission?")) return;
-        await _supabase.from('submissions').update({ status: 'rejected' }).eq('id', subId);
-        await _supabase.from('tasks').update({ status: 'rejected' }).eq('id', taskId);
-
-        alert("Task submission rejected.");
-        loadAdminData();
-    }
-
-    async function approveWd(wdId, userId, amount) {
-        const { data: prof } = await _supabase.from('profiles').select('balance').eq('id', userId).single();
-        if((prof?.balance || 0) < amount) return alert("Insufficient user balance!");
-
-        await _supabase.from('withdrawals').update({ status: 'approved' }).eq('id', wdId);
-        await _supabase.from('profiles').update({ balance: prof.balance - amount }).eq('id', userId);
-
-        alert("Withdrawal approved and balance deducted successfully!");
-        loadAdminData();
-    }
-
-    async function rejectWd(wdId) {
-        if(!confirm("Are you sure you want to reject this withdrawal request?")) return;
-        await _supabase.from('withdrawals').update({ status: 'rejected' }).eq('id', wdId);
-
-        alert("Withdrawal request rejected.");
-        loadAdminData();
-    }
-
-    document.addEventListener('DOMContentLoaded', () => initAdmin());
+    // Initialize Panel
+    document.addEventListener('DOMContentLoaded', () => initAdminPortal());
     </script>
 </body>
 </html>
