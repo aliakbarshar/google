@@ -44,10 +44,10 @@
         <!-- Navigation Tabs -->
         <div class="flex gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
             <button id="tab-btn-submissions" onclick="switchAdminTab('submissions')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500">
-                ✅ Completed Tasks & Proofs
+                ✅ Task Submissions & Review Proofs
             </button>
             <button id="tab-btn-create-task" onclick="switchAdminTab('create-task')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
-                ➕ Publish Task for Users
+                ➕ Publish Task (All / Specific User)
             </button>
             <button id="tab-btn-users-list" onclick="switchAdminTab('users-list')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
                 👥 Registered Users & Gmails
@@ -61,10 +61,10 @@
         <section id="tab-content-submissions" class="space-y-4">
             <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
                 <div>
-                    <h2 class="font-bold text-base text-emerald-400">🔍 Task Submissions & Verification</h2>
-                    <p class="text-xs text-slate-400">Verify user screenshots, review Gmails, and approve/reject rewards.</p>
+                    <h2 class="font-bold text-base text-emerald-400">🔍 Task Proofs Verification</h2>
+                    <p class="text-xs text-slate-400">Check user target Gmail, review comments, proof links, and approve/reject payouts.</p>
                 </div>
-                <button onclick="loadWorkerSubmissions()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ Refresh</button>
+                <button onclick="loadWorkerSubmissions()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ Refresh Submissions</button>
             </div>
 
             <div id="submissions-list-container" class="space-y-4">
@@ -75,7 +75,7 @@
         <!-- ================= TAB 2: PUBLISH TASK FOR SPECIFIC OR ALL USERS ================= -->
         <section id="tab-content-create-task" class="hidden space-y-4">
             <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
-                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">➕ Publish New Task for Worker</h2>
+                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">➕ Publish New Task for Workers</h2>
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -88,10 +88,10 @@
                     </div>
 
                     <!-- Target Worker Specific Email Field -->
-                    <div class="md:col-span-2 bg-slate-900/60 p-3 rounded-xl border border-slate-700/80">
-                        <label class="block text-xs font-bold text-amber-400 mb-1">🎯 Specific User Gmail (Optional)</label>
-                        <input type="email" id="task-target-email" placeholder="Leave empty for ALL users, OR type user email (e.g. worker@gmail.com)" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-amber-500">
-                        <p class="text-[11px] text-slate-400 mt-1">If left blank, this task will be visible to all registered workers. If filled, only that user will see it.</p>
+                    <div class="md:col-span-2 bg-slate-900/80 p-3.5 rounded-xl border border-amber-500/40">
+                        <label class="block text-xs font-bold text-amber-400 mb-1">🎯 Target Worker Gmail (Optional)</label>
+                        <input type="email" id="task-target-email" placeholder="Leave blank for ALL users, OR enter worker email (e.g. worker@gmail.com)" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-amber-500">
+                        <p class="text-[11px] text-slate-400 mt-1.5">If left empty, all users will see this task. If specified, only this worker will see and perform it.</p>
                     </div>
 
                     <div class="md:col-span-2">
@@ -100,7 +100,7 @@
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-xs text-slate-400 mb-1">Required Review Comment & Instructions *</label>
-                        <textarea id="task-desc" placeholder="Write exact comment text or guidelines for worker..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 h-24"></textarea>
+                        <textarea id="task-desc" placeholder="Write exact review comment text or step-by-step guidelines..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 h-24"></textarea>
                     </div>
                 </div>
                 <button onclick="publishWorkerTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition">Publish Task 🚀</button>
@@ -112,7 +112,7 @@
             <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
                 <div>
                     <h2 class="font-bold text-base text-emerald-400">👥 Registered Users & Email Records</h2>
-                    <p class="text-xs text-slate-400">List of registered users, their emails, and current wallet balances.</p>
+                    <p class="text-xs text-slate-400">Complete list of registered workers/clients, their Gmails, and wallet balances.</p>
                 </div>
                 <button onclick="loadRegisteredUsers()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ Refresh Users</button>
             </div>
@@ -124,7 +124,7 @@
                             <th class="p-3">User ID</th>
                             <th class="p-3">User Email (Gmail)</th>
                             <th class="p-3">Wallet Balance (PKR)</th>
-                            <th class="p-3">Registered Date</th>
+                            <th class="p-3">Registration Date</th>
                         </tr>
                     </thead>
                     <tbody id="users-table-body" class="divide-y divide-slate-700/50 text-xs">
@@ -139,7 +139,7 @@
             <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
                 <div>
                     <h2 class="font-bold text-base text-emerald-400">💼 Client Service Orders</h2>
-                    <p class="text-xs text-slate-400">Orders submitted by clients for reviews.</p>
+                    <p class="text-xs text-slate-400">Review requests placed by business clients.</p>
                 </div>
                 <button onclick="loadAdminClientOrders()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ Refresh Orders</button>
             </div>
@@ -236,7 +236,7 @@
         container.innerHTML = '';
 
         subs.forEach(s => {
-            const workerEmail = s.profiles?.email || 'Registered User';
+            const workerAccountEmail = s.profiles?.email || 'Registered User';
             const taskTitle = s.tasks?.title || 'Review Task';
             const reward = s.tasks?.reward || 0;
 
@@ -245,7 +245,7 @@
                     <div class="flex justify-between items-start border-b border-slate-700 pb-2">
                         <div>
                             <h3 class="text-sm font-bold text-slate-200">${taskTitle}</h3>
-                            <p class="text-[11px] text-slate-400">Worker Email: <strong class="text-emerald-400 font-mono">${workerEmail}</strong> | Reward: <strong class="text-amber-400">PKR ${reward}</strong></p>
+                            <p class="text-[11px] text-slate-400">Account Email: <strong class="text-emerald-400 font-mono">${workerAccountEmail}</strong> | Reward: <strong class="text-amber-400">PKR ${reward}</strong></p>
                         </div>
                         <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg ${s.status === 'approved' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : s.status === 'rejected' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}">
                             ${s.status.toUpperCase()}
@@ -254,12 +254,12 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                         <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-                            <span class="text-slate-500 font-bold block">Gmail used for Review:</span>
-                            <span class="text-white font-mono">${s.target_gmail || 'N/A'}</span>
+                            <span class="text-slate-400 font-bold block mb-1">Gmail Used for Maps Review:</span>
+                            <span class="text-emerald-400 font-mono font-bold text-xs">${s.target_gmail || 'Not provided'}</span>
                         </div>
                         <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-                            <span class="text-slate-500 font-bold block">Proof Link / Screenshot:</span>
-                            ${s.proof_url ? `<a href="${s.proof_url}" target="_blank" class="text-blue-400 underline break-all">${s.proof_url}</a>` : '<span class="text-slate-500">Not provided</span>'}
+                            <span class="text-slate-400 font-bold block mb-1">Proof Link / Screenshot URL:</span>
+                            ${s.proof_url ? `<a href="${s.proof_url}" target="_blank" class="text-blue-400 underline break-all text-xs">${s.proof_url}</a>` : '<span class="text-slate-500">No URL provided</span>'}
                         </div>
                     </div>
 
@@ -284,12 +284,12 @@
             await _supabase.from('profiles').update({ balance: curBal + rewardAmt }).eq('id', workerId);
         }
 
-        alert(`Submission #${subId} marked as ${newStatus}`);
+        alert(`Submission #${subId} successfully updated to ${newStatus}`);
         loadWorkerSubmissions();
         loadRegisteredUsers();
     }
 
-    // ================= 2. PUBLISH WORKER TASK WITH SPECIFIC EMAIL OPTION =================
+    // ================= 2. PUBLISH WORKER TASK =================
 
     async function publishWorkerTask() {
         const title = document.getElementById('task-title').value.trim();
@@ -299,22 +299,23 @@
         const desc = document.getElementById('task-desc').value.trim();
 
         if (!title || !reward || !link) {
-            return alert("Please fill Title, Reward, and Map Link.");
+            return alert("Please fill Title, Reward, and Google Maps Link.");
         }
 
-        const taskData = {
-            title, 
-            reward, 
-            link, 
+        const taskPayload = {
+            title: title, 
+            reward: reward, 
+            link: link, 
             description: desc,
-            target_email: targetEmail || null
+            target_email: targetEmail ? targetEmail : null
         };
 
-        const { error } = await _supabase.from('tasks').insert([taskData]);
+        const { error } = await _supabase.from('tasks').insert([taskPayload]);
 
-        if (error) alert("Failed to publish task: " + error.message);
-        else {
-            alert(targetEmail ? `Task published successfully for ${targetEmail}! 🚀` : "Task published successfully for ALL users! 🚀");
+        if (error) {
+            alert("Failed to publish task: " + error.message);
+        } else {
+            alert(targetEmail ? `Task published successfully for ${targetEmail}! 🚀` : "Task published successfully for ALL registered users! 🚀");
             document.getElementById('task-title').value = '';
             document.getElementById('task-reward').value = '';
             document.getElementById('task-target-email').value = '';
@@ -324,21 +325,21 @@
         }
     }
 
-    // ================= 3. LOAD REGISTERED USERS =================
+    // ================= 3. LOAD ALL REGISTERED USERS =================
 
     async function loadRegisteredUsers() {
         const tbody = document.getElementById('users-table-body');
-        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Loading user accounts...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Loading registered user profiles...</td></tr>';
 
         const { data: users, error } = await _supabase.from('profiles').select('*').order('created_at', { ascending: false });
 
         if (error) {
-            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-400">Error loading profiles: ${error.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-400">Error loading users: ${error.message}</td></tr>`;
             return;
         }
 
         if (!users || users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">No registered users found in Database.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">No registered users found in Database. Run Step 1 SQL script.</td></tr>';
             return;
         }
 
@@ -347,9 +348,9 @@
             tbody.innerHTML += `
                 <tr class="hover:bg-slate-800/50">
                     <td class="p-3 font-mono text-[10px] text-slate-400">${u.id}</td>
-                    <td class="p-3 font-mono font-bold text-emerald-400">${u.email || 'Email Unset'}</td>
+                    <td class="p-3 font-mono font-bold text-emerald-400">${u.email || 'Registered User'}</td>
                     <td class="p-3 font-bold text-amber-400">PKR ${u.balance || 0}</td>
-                    <td class="p-3 text-slate-500">${new Date(u.created_at || Date.now()).toLocaleDateString()}</td>
+                    <td class="p-3 text-slate-500">${u.created_at ? new Date(u.created_at).toLocaleDateString() : 'N/A'}</td>
                 </tr>
             `;
         });
