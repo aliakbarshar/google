@@ -165,7 +165,7 @@
             loadAdminData();
             loadUsersDropdown();
         } else {
-            document.getElementById('admin-auth-block').classList.add('hidden');
+            document.getElementById('admin-auth-block').classList.remove('hidden');
             document.getElementById('admin-main').classList.add('hidden');
         }
     }
@@ -323,7 +323,6 @@
         if(!name || !map) return alert("Please enter client name and maps link!");
 
         if (editingId) {
-            // Update existing client order
             const { error } = await _supabase.from('client_orders').update({
                 client_name: name,
                 google_maps_link: map,
@@ -336,7 +335,6 @@
                 loadClientOrders();
             } else alert("Error: " + error.message);
         } else {
-            // Add new client order
             const { error } = await _supabase.from('client_orders').insert([{
                 client_name: name,
                 google_maps_link: map,
@@ -398,7 +396,7 @@
 
         if(orders && orders.length > 0) {
             let html = '';
-            orders.load?.forEach ? null : orders.forEach(o => {
+            orders.forEach(o => {
                 html += `
                     <div class="bg-slate-50 p-2.5 rounded-xl border text-xs flex justify-between items-center">
                         <div>
