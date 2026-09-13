@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Review System - Admin Panel</title>
+    <title>Google Review System - Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -11,66 +11,118 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen p-3 md:p-6">
 
-    <div class="max-w-xl mx-auto space-y-4">
+    <div class="max-w-2xl mx-auto space-y-4">
         <!-- Header -->
         <header class="bg-slate-900 text-white p-4 rounded-2xl shadow-lg flex justify-between items-center">
             <div>
-                <h1 class="font-bold text-base">Admin Dashboard</h1>
+                <h1 class="font-bold text-base">Admin Control Panel</h1>
                 <p id="admin-email" class="text-xs text-slate-400">Loading...</p>
             </div>
             <button onclick="logoutAdmin()" class="bg-red-600 text-white text-xs px-3 py-1.5 rounded-xl font-bold">Sign Out</button>
         </header>
 
-        <!-- Admin Login Block (If not logged in) -->
+        <!-- Admin Login -->
         <div id="admin-auth-block" class="bg-white p-6 rounded-2xl border shadow space-y-4">
             <h2 class="font-bold text-sm text-slate-700">Admin Sign In</h2>
             <form onsubmit="event.preventDefault(); handleAdminLogin();" class="space-y-3">
-                <input type="email" id="admin-email-input" placeholder="Admin Email" required class="w-full border p-2.5 rounded-xl text-xs outline-none focus:border-blue-600">
-                <input type="password" id="admin-pass-input" placeholder="Password" required class="w-full border p-2.5 rounded-xl text-xs outline-none focus:border-blue-600">
-                <button type="submit" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs">Login as Admin</button>
+                <input type="email" id="admin-email-input" placeholder="Admin Email" required class="w-full border p-2.5 rounded-xl text-xs outline-none">
+                <input type="password" id="admin-pass-input" placeholder="Password" required class="w-full border p-2.5 rounded-xl text-xs outline-none">
+                <button type="submit" class="w-full bg-slate-900 text-white font-bold py-2.5 rounded-xl text-xs">Login</button>
             </form>
         </div>
 
         <!-- Admin Main Panel -->
         <div id="admin-main" class="hidden space-y-4">
-            <!-- Create Task Card -->
-            <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
-                <h3 class="font-bold text-xs text-slate-700">Create New Review Task</h3>
-                
-                <div>
-                    <label class="text-[10px] text-slate-500 font-bold block mb-1">Google Maps Location Link:</label>
-                    <input type="url" id="new-task-map" placeholder="https://maps.app.goo.gl/..." class="w-full border p-2.5 rounded-xl text-xs outline-none">
-                </div>
+            
+            <!-- Navigation Tabs -->
+            <div class="grid grid-cols-3 bg-white p-1 rounded-2xl border text-xs font-bold text-center">
+                <button onclick="switchAdminTab('tasks')" id="atab-tasks" class="py-2 rounded-xl bg-slate-900 text-white">Create & Submissions</button>
+                <button onclick="switchAdminTab('users')" id="atab-users" class="py-2 rounded-xl text-slate-500">Users & Gmails</button>
+                <button onclick="switchAdminTab('clients')" id="atab-clients" class="py-2 rounded-xl text-slate-500">Client Orders</button>
+            </div>
 
-                <div>
-                    <label class="text-[10px] text-slate-500 font-bold block mb-1">Review Comment Text:</label>
-                    <textarea id="new-task-comment" rows="2" placeholder="Write review text here..." class="w-full border p-2.5 rounded-xl text-xs outline-none"></textarea>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="text-[10px] text-slate-500 font-bold block mb-1">Target Gmail (Optional):</label>
-                        <input type="email" id="new-task-gmail" placeholder="Specific Gmail or leave blank" class="w-full border p-2.5 rounded-xl text-xs outline-none">
+            <!-- TAB 1: CREATE TASKS & SUBMISSIONS -->
+            <div id="asec-tasks" class="space-y-4">
+                <!-- Create Task -->
+                <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
+                    <h3 class="font-bold text-xs text-slate-700">Create New Review Task</h3>
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-bold block mb-1">Select Specific User:</label>
+                            <select id="task-user-select" class="w-full border p-2 rounded-xl text-xs outline-none bg-slate-50">
+                                <option value="">-- All Users (General Task) --</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-500 font-bold block mb-1">Target Gmail:</label>
+                            <input type="text" id="new-task-gmail" placeholder="Specific Gmail or leave blank" class="w-full border p-2 rounded-xl text-xs outline-none">
+                        </div>
                     </div>
+
+                    <div>
+                        <label class="text-[10px] text-slate-500 font-bold block mb-1">Google Maps Location Link:</label>
+                        <input type="url" id="new-task-map" placeholder="https://maps.app.goo.gl/..." class="w-full border p-2 rounded-xl text-xs outline-none">
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] text-slate-500 font-bold block mb-1">Box 1: Review Comment Text (User will copy this):</label>
+                        <textarea id="new-task-comment" rows="2" placeholder="Write review comment here..." class="w-full border p-2 rounded-xl text-xs outline-none"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="text-[10px] text-slate-500 font-bold block mb-1">Box 2: Admin Message / Instructions for User:</label>
+                        <textarea id="new-task-msg" rows="2" placeholder="Instructions e.g., complete before evening..." class="w-full border p-2 rounded-xl text-xs outline-none"></textarea>
+                    </div>
+
                     <div>
                         <label class="text-[10px] text-slate-500 font-bold block mb-1">Reward (PKR):</label>
-                        <input type="number" id="new-task-reward" value="20" class="w-full border p-2.5 rounded-xl text-xs outline-none">
+                        <input type="number" id="new-task-reward" value="20" class="w-full border p-2 rounded-xl text-xs outline-none">
+                    </div>
+
+                    <button onclick="createNewTask()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-blue-700">Publish Task</button>
+                </div>
+
+                <!-- Submissions Review -->
+                <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
+                    <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
+                        <span>User Submissions (Pending Proofs)</span>
+                        <button onclick="loadAdminData()" class="text-[10px] text-blue-600 underline">Refresh</button>
+                    </h3>
+                    <div id="admin-submissions-list" class="space-y-3">
+                        <p class="text-xs text-slate-400 text-center py-4">Loading submissions...</p>
                     </div>
                 </div>
-
-                <button onclick="createNewTask()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-blue-700">Publish Task</button>
             </div>
 
-            <!-- Submissions Review Section -->
-            <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
+            <!-- TAB 2: USERS & GMAIL ACCOUNTS -->
+            <div id="asec-users" class="hidden bg-white p-4 rounded-2xl border shadow space-y-3">
                 <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
-                    <span>User Submissions (Pending Proofs)</span>
-                    <button onclick="loadAdminData()" class="text-[10px] text-blue-600 underline">Refresh</button>
+                    <span>All Registered Users & Their Gmails</span>
+                    <button onclick="loadAllUsers()" class="text-[10px] text-blue-600 underline">Refresh</button>
                 </h3>
-                <div id="admin-submissions-list" class="space-y-3">
-                    <p class="text-xs text-slate-400 text-center py-4">Loading submissions...</p>
+                <div id="admin-users-list" class="space-y-3">
+                    <p class="text-xs text-slate-400 text-center py-4">Loading users...</p>
                 </div>
             </div>
+
+            <!-- TAB 3: CLIENT ORDERS -->
+            <div id="asec-clients" class="hidden bg-white p-4 rounded-2xl border shadow space-y-3">
+                <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
+                    <span>Client Review Orders Record</span>
+                    <button onclick="loadClientOrders()" class="text-[10px] text-blue-600 underline">Refresh</button>
+                </h3>
+                <!-- Add Client Order Form -->
+                <div class="bg-slate-50 p-3 rounded-xl border space-y-2">
+                    <h4 class="font-bold text-[11px] text-slate-700">Add New Client Order</h4>
+                    <input type="text" id="client-name" placeholder="Client Name / Business Name" class="w-full border p-2 rounded-xl text-xs">
+                    <input type="url" id="client-map" placeholder="Google Maps Link" class="w-full border p-2 rounded-xl text-xs">
+                    <input type="number" id="client-reviews-count" placeholder="Number of Reviews Needed" class="w-full border p-2 rounded-xl text-xs">
+                    <button onclick="addClientOrder()" class="w-full bg-emerald-600 text-white font-bold py-2 rounded-xl text-xs">Save & Approve Client Order</button>
+                </div>
+                <div id="client-orders-list" class="space-y-2 pt-2"></div>
+            </div>
+
         </div>
     </div>
 
@@ -90,7 +142,6 @@
     async function handleAdminLogin() {
         const email = document.getElementById('admin-email-input').value.trim();
         const password = document.getElementById('admin-pass-input').value.trim();
-
         const { error } = await _supabase.auth.signInWithPassword({ email, password });
         if(error) alert("Login error: " + error.message);
         else checkAdminSession();
@@ -103,25 +154,51 @@
             document.getElementById('admin-main').classList.remove('hidden');
             document.getElementById('admin-email').innerText = user.email;
             loadAdminData();
+            loadUsersDropdown();
         } else {
             document.getElementById('admin-auth-block').classList.remove('hidden');
             document.getElementById('admin-main').classList.add('hidden');
         }
     }
 
+    function switchAdminTab(tab) {
+        ['tasks', 'users', 'clients'].forEach(t => {
+            document.getElementById(`asec-${t}`).classList.add('hidden');
+            document.getElementById(`atab-${t}`).className = "py-2 rounded-xl text-slate-500";
+        });
+        document.getElementById(`asec-${tab}`).classList.remove('hidden');
+        document.getElementById(`atab-${tab}`).className = "py-2 rounded-xl bg-slate-900 text-white font-bold";
+
+        if(tab === 'users') loadAllUsers();
+        if(tab === 'clients') loadClientOrders();
+    }
+
+    async function loadUsersDropdown() {
+        const { data: users } = await _supabase.from('profiles').select('id, full_name, email');
+        const select = document.getElementById('task-user-select');
+        select.innerHTML = '<option value="">-- All Users (General Task) --</option>';
+        if(users) {
+            users.forEach(u => {
+                select.innerHTML += `<option value="${u.id}">${u.full_name || u.email}</option>`;
+            });
+        }
+    }
+
     async function createNewTask() {
+        const selectedUserId = document.getElementById('task-user-select').value || null;
         const mapsLink = document.getElementById('new-task-map').value.trim();
         const reviewText = document.getElementById('new-task-comment').value.trim();
+        const adminMsg = document.getElementById('new-task-msg').value.trim();
         const targetGmail = document.getElementById('new-task-gmail').value.trim();
         const reward = parseFloat(document.getElementById('new-task-reward').value) || 20;
 
-        if(!mapsLink || !reviewText) {
-            return alert("مهرباني ڪري ميپس لنڪ ۽ ڪمينٽ جو متن (Review Text) ٻئي داخل ڪريو!");
-        }
+        if(!mapsLink || !reviewText) return alert("Please fill Maps Link and Review Comment!");
 
         const { error } = await _supabase.from('tasks').insert([{
+            assigned_user_id: selectedUserId,
             google_maps_link: mapsLink,
             review_text: reviewText,
+            admin_message: adminMsg,
             target_gmail: targetGmail || null,
             reward: reward,
             status: 'active'
@@ -131,10 +208,9 @@
             alert("Task published successfully!");
             document.getElementById('new-task-map').value = '';
             document.getElementById('new-task-comment').value = '';
+            document.getElementById('new-task-msg').value = '';
             document.getElementById('new-task-gmail').value = '';
-        } else {
-            alert("Error creating task: " + error.message);
-        }
+        } else alert("Error: " + error.message);
     }
 
     async function loadAdminData() {
@@ -146,17 +222,14 @@
             .eq('status', 'pending')
             .order('id', { ascending: false });
 
-        if(error) {
-            container.innerHTML = `<p class="text-xs text-red-500 text-center">Error: ${error.message}</p>`;
-            return;
-        }
+        if(error) return container.innerHTML = `<p class="text-xs text-red-500">Error: ${error.message}</p>`;
 
         if(subs && subs.length > 0) {
             let html = '';
             subs.forEach(s => {
                 const userName = s.profiles?.full_name || 'User';
                 const userPhone = s.profiles?.phone || 'No Phone';
-                const taskComment = s.tasks?.review_text || 'No comment provided';
+                const taskComment = s.tasks?.review_text || 'No comment';
                 const taskMap = s.tasks?.google_maps_link || '#';
 
                 html += `
@@ -170,36 +243,106 @@
                             <a href="${taskMap}" target="_blank" class="text-blue-500 underline block text-[11px]">Open Maps Link ↗</a>
                         </div>
                         <div class="bg-emerald-50 p-2 rounded border border-emerald-200">
-                            <strong class="text-emerald-800 text-[10px] block">User Proof Link / Details:</strong>
+                            <strong class="text-emerald-800 text-[10px] block">User Proof Link:</strong>
                             <p class="font-mono text-emerald-900 select-all">${s.proof_link || 'No proof link'}</p>
                         </div>
                         <div class="flex gap-2 pt-1">
-                            <button onclick="approveSubmission(${s.id}, ${s.user_id}, ${s.tasks?.reward || 20})" class="w-1/2 bg-emerald-600 text-white py-1.5 rounded-lg font-bold hover:bg-emerald-700">Approve & Pay</button>
-                            <button onclick="rejectSubmission(${s.id})" class="w-1/2 bg-red-600 text-white py-1.5 rounded-lg font-bold hover:bg-red-700">Reject</button>
+                            <button onclick="approveSubmission(${s.id}, '${s.user_id}', ${s.tasks?.reward || 20})" class="w-1/2 bg-emerald-600 text-white py-1.5 rounded-lg font-bold">Approve & Pay</button>
+                            <button onclick="rejectSubmission(${s.id})" class="w-1/2 bg-red-600 text-white py-1.5 rounded-lg font-bold">Reject</button>
                         </div>
                     </div>
                 `;
             });
             container.innerHTML = html;
-        } else {
-            container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No pending submissions found.</p>';
-        }
+        } else container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No pending submissions.</p>';
+    }
+
+    async function loadAllUsers() {
+        const container = document.getElementById('admin-users-list');
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Loading users record...</p>';
+
+        const { data: users, error } = await _supabase.from('profiles').select('*').order('id', { ascending: false });
+        if(error) return container.innerHTML = `<p class="text-xs text-red-500">Error: ${error.message}</p>`;
+
+        if(users && users.length > 0) {
+            let html = `<p class="text-[11px] font-bold text-slate-500">Total Registered Users: ${users.length}</p>`;
+            users.forEach(u => {
+                const gmails = (u.gmail_accounts && u.gmail_accounts.length > 0) ? u.gmail_accounts.join(', ') : 'No Gmail added';
+                html += `
+                    <div class="bg-slate-50 p-3 rounded-xl border space-y-1 text-xs">
+                        <div class="flex justify-between items-center font-bold text-slate-700">
+                            <span>👤 ${u.full_name || 'No Name'}</span>
+                            <span class="text-emerald-600">Balance: Rs. ${u.balance || 0}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500"><strong>Email:</strong> ${u.email || 'N/A'} | <strong>Phone:</strong> ${u.phone || 'N/A'}</p>
+                        <p class="text-[11px] bg-white p-1.5 rounded border font-mono text-blue-600"><strong>Registered Gmails:</strong> ${gmails}</p>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No users found.</p>';
+    }
+
+    async function addClientOrder() {
+        const name = document.getElementById('client-name').value.trim();
+        const map = document.getElementById('client-map').value.trim();
+        const count = parseInt(document.getElementById('client-reviews-count').value) || 1;
+
+        if(!name || !map) return alert("Please enter client name and maps link!");
+
+        const { error } = await _supabase.from('client_orders').insert([{
+            client_name: name,
+            google_maps_link: map,
+            reviews_needed: count,
+            status: 'approved'
+        }]);
+
+        if(!error) {
+            alert("Client order added and approved successfully!");
+            document.getElementById('client-name').value = '';
+            document.getElementById('client-map').value = '';
+            document.getElementById('client-reviews-count').value = '';
+            loadClientOrders();
+        } else alert("Error: " + error.message);
+    }
+
+    async function loadClientOrders() {
+        const container = document.getElementById('client-orders-list');
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">Loading client orders...</p>';
+
+        const { data: orders, error } = await _supabase.from('client_orders').select('*').order('id', { ascending: false });
+        if(error) return container.innerHTML = `<p class="text-xs text-red-500">Error: ${error.message}</p>`;
+
+        if(orders && orders.length > 0) {
+            let html = '';
+            orders.forEach(o => {
+                html += `
+                    <div class="bg-slate-50 p-2.5 rounded-xl border text-xs flex justify-between items-center">
+                        <div>
+                            <span class="font-bold text-slate-700">${o.client_name}</span>
+                            <p class="text-[10px] text-slate-400">Needed: ${o.reviews_needed} Reviews</p>
+                            <a href="${o.google_maps_link}" target="_blank" class="text-blue-500 underline text-[10px]">Maps Link ↗</a>
+                        </div>
+                        <span class="font-bold px-2 py-0.5 rounded text-[10px] bg-emerald-100 text-emerald-700">${o.status}</span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else container.innerHTML = '<p class="text-[11px] text-slate-400 text-center">No client orders recorded yet.</p>';
     }
 
     async function approveSubmission(subId, userId, rewardAmount) {
-        // Status اپڊيٽ ڪريو
         const { error: subErr } = await _supabase.from('submissions').update({ status: 'approved' }).eq('id', subId);
         if(subErr) return alert("Error: " + subErr.message);
 
-        // يوزر جي بيلنس ۾ پئسا وڌايو
         const { data: prof } = await _supabase.from('profiles').select('balance').eq('id', userId).single();
         const currentBal = prof ? (prof.balance || 0) : 0;
         const newBal = currentBal + rewardAmount;
 
         const { error: balErr } = await _supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
-        if(balErr) alert("Submission approved, but balance update failed: " + balErr.message);
+        if(balErr) alert("Approved, but balance update failed: " + balErr.message);
         else {
-            alert("Task approved and reward added to user balance!");
+            alert("Approved and reward added to user balance!");
             loadAdminData();
         }
     }
