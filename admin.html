@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - Google Review System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4">
+
+    <div class="max-w-3xl mx-auto space-y-6">
+        <header class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+            <h1 class="font-bold text-emerald-400 text-base">⚡ Admin Control Panel</h1>
+            <span id="admin-user" class="text-xs text-slate-400">Loading...</span>
+        </header>
+
+        <!-- Registered Users & Details -->
+        <section class="bg-slate-800 p-4 rounded-2xl border border-slate-700 space-y-3">
+            <h2 class="font-bold text-xs text-emerald-400">👥 Registered Users & Gmail Accounts</h2>
+            <div id="users-detail-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
+        </section>
+
+        <!-- Create Task -->
+        <section class="bg-slate-800 p-4 rounded-2xl border border-slate-700 space-y-3">
+            <h2 class="font-bold text-xs text-emerald-400">➕ Assign Task to User</h2>
+            <select id="task-user-select" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white"></select>
+            <input type="text" id="task-target-gmail" placeholder="Target Gmail Account" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white">
+            <input type="url" id="task-maps-link" placeholder="Google Maps Location Link" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white">
+            <textarea id="task-review-txt" rows="2" placeholder="Review Comment Text" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white"></textarea>
+            <button onclick="sendTask()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs">Assign Task (Rs. 20 Reward)</button>
+        </section>
+
+        <!-- Pending Submissions -->
+        <section class="bg-slate-800 p-4 rounded-2xl border border-slate-700 space-y-3">
+            <h2 class="font-bold text-xs text-amber-400">📥 Pending Review Proofs</h2>
+            <div id="admin-subs-list" class="space-y-2"></div>
+        </section>
+
+        <!-- Pending Withdrawals -->
+        <section class="bg-slate-800 p-4 rounded-2xl border border-slate-700 space-y-3">
+            <h2 class="font-bold text-xs text-blue-400">💸 Pending Withdrawal Requests</h2>
+            <div id="admin-wd-list" class="space-y-2"></div>
+        </section>
+    </div>
+
+    <script>
+    const SUPABASE_URL = 'https://zpglwxppgzdjirnvvlfg.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZ2x3eHBwZ3pkamlybnZ2bGZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyNzg1NTksImV4cCI6MjEwNDg1NDU1OX0.ZnQm9NqG4UMU7BNadusvKN0s8CU4Evkzxzk2iJckpO4';
+    
+    let _supabase = null;
+
+    function initAdmin(retries = 5) {
+        if (window.supabase && typeof window.supabase.createClient === 'function') {
+            _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            checkAdminAccess();
+        } else if (retries > 0) setTimeout(() => initAdmin(retries - 1), 300);
+    }
+
+    async function checkAdminAccess() {
+        const { data: { user } } = await _supabase.auth.getUser();
+        if(!user || user.email !== 'aliakbarshar@gmail.com') {
+            alert("Access restricted! Admin authorization required.");
+            window.location.href = "index.html";
+            return;
+        }
+        document.getElementById('admin-user').innerText = user.email;
+        loadAdminData();
+    }
+
+    async function loadAdminData() {
+        // Fetch Users
+        const { data: users } = await _supabase.from('profiles').select('*');
+        const userList = document.getElementById('users-detail-list');
+        const select = document.getElementById('task-user-select');
+        userList.innerHTML = '';
+        select.innerHTML = '<option value="">-- Select User --</option>';
+
+        if(users) {
+            users.forEach(u => {
+                select.innerHTML += `<option value="${u.id}">${u.full_name || u.email} (${u.phone || 'No phone'})</option>`;
+                const gmailBadge = u.gmail_accounts ? u.gmail_accounts.join(', ') : 'No Gmail added';
+                userList.innerHTML += `
+                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-xs space-y-1">
+                        <div class="flex justify-between font-bold text-emerald-300">
+                            <span>${u.full_name || 'No Name'} (${u.email})</span>
+                            <span>Balance: Rs. ${u.balance || 0}</span>
+                        </div>
+                        <p class="text-slate-400">Phone: ${u.phone || 'N/A'} | Country: ${u.country || 'N/A'}</p>
+                        <p class="text-slate-400">Payment Details: ${u.bank_details || 'N/A'}</p>
+                        <p class="text-blue-300 font-mono">Gmail Accounts: ${gmailBadge}</p>
+                    </div>`;
+            });
+        }
+
+        // Fetch Submissions
+        const { data: subs } = await _supabase.from('submissions').select('*, tasks(*), profiles(*)').eq('status', 'pending');
+        const subsList = document.getElementById('admin-subs-list');
+        subsList.innerHTML = '';
+        if(subs && subs.length > 0) {
+            subs.forEach(s => {
+                subsList.innerHTML += `
+                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-xs flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-white">${s.profiles?.full_name} (${s.profiles?.email})</p>
+                            <a href="${s.proof_link}" target="_blank" class="text-blue-400 underline">View Proof Link ↗</a>
+                        </div>
+                        <button onclick="approveSub(${s.id}, '${s.user_id}', ${s.task_id})" class="bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg">Approve (+Rs. 20)</button>
+                    </div>`;
+            });
+        } else subsList.innerHTML = '<p class="text-slate-500 text-xs">No pending review submissions.</p>';
+
+        // Fetch Withdrawals
+        const { data: wds } = await _supabase.from('withdrawals').select('*, profiles(*)').eq('status', 'pending');
+        const wdList = document.getElementById('admin-wd-list');
+        wdList.innerHTML = '';
+        if(wds && wds.length > 0) {
+            wds.forEach(w => {
+                wdList.innerHTML += `
+                    <div class="bg-slate-900 p-3 rounded-xl border border-slate-700 text-xs flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-white">${w.profiles?.full_name} - Rs. ${w.amount}</p>
+                            <p class="text-slate-400">${w.payment_method_details}</p>
+                        </div>
+                        <button onclick="approveWd(${w.id}, '${w.user_id}', ${w.amount})" class="bg-blue-600 text-white font-bold px-3 py-1.5 rounded-lg">Approve & Deduct</button>
+                    </div>`;
+            });
+        } else wdList.innerHTML = '<p class="text-slate-500 text-xs">No pending withdrawal requests.</p>';
+    }
+
+    async function sendTask() {
+        const userId = document.getElementById('task-user-select').value;
+        const targetGmail = document.getElementById('task-target-gmail').value;
+        const mapsLink = document.getElementById('task-maps-link').value;
+        const reviewText = document.getElementById('task-review-txt').value;
+
+        if(!userId || !mapsLink || !reviewText) return alert("Please complete all required fields!");
+
+        const { error } = await _supabase.from('tasks').insert([{
+            assigned_user_id: userId,
+            target_gmail: targetGmail,
+            google_maps_link: mapsLink,
+            review_text: reviewText,
+            reward: 20
+        }]);
+
+        if(!error) { alert("Task assigned successfully!"); loadAdminData(); }
+        else alert(error.message);
+    }
+
+    async function approveSub(subId, userId, taskId) {
+        await _supabase.from('submissions').update({ status: 'approved' }).eq('id', subId);
+        await _supabase.from('tasks').update({ status: 'completed' }).eq('id', taskId);
+
+        const { data: prof } = await _supabase.from('profiles').select('balance').eq('id', userId).single();
+        const newBal = (prof?.balance || 0) + 20;
+        await _supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
+
+        alert("Task approved! Rs. 20 credited to user balance.");
+        loadAdminData();
+    }
+
+    async function approveWd(wdId, userId, amount) {
+        const { data: prof } = await _supabase.from('profiles').select('balance').eq('id', userId).single();
+        if((prof?.balance || 0) < amount) return alert("Insufficient user balance!");
+
+        await _supabase.from('withdrawals').update({ status: 'approved' }).eq('id', wdId);
+        await _supabase.from('profiles').update({ balance: prof.balance - amount }).eq('id', userId);
+
+        alert("Withdrawal approved and balance deducted successfully!");
+        loadAdminData();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => initAdmin());
+    </script>
+</body>
+</html>
