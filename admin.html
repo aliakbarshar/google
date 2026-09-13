@@ -41,20 +41,14 @@
                 <button onclick="switchAdminTab('withdrawals')" id="atab-withdrawals" class="py-2.5 rounded-xl text-slate-400">Withdrawals</button>
             </div>
 
-            <!-- TAB 1: MANAGE & CREATE TASKS -->
+            <!-- TAB 1: MANAGE & CREATE TASKS (Original Simple Form) -->
             <div id="asec-tasks" class="space-y-4">
                 <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl shadow space-y-3">
                     <h3 class="font-bold text-xs text-slate-200">Create New Review Task</h3>
                     <form onsubmit="event.preventDefault(); createNewTask();" class="space-y-3">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <input type="url" id="t-maps" placeholder="Google Maps Link" required class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs outline-none text-white">
-                            <input type="number" id="t-reward" placeholder="Reward (e.g. 20)" value="20" required class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs outline-none text-white">
-                        </div>
+                        <input type="url" id="t-maps" placeholder="Google Maps Link" required class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs outline-none text-white">
+                        <input type="number" id="t-reward" placeholder="Reward Amount (e.g. 20)" value="20" required class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs outline-none text-white">
                         <textarea id="t-review" placeholder="Review Text to post..." rows="2" required class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs outline-none text-white"></textarea>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <input type="email" id="t-target-gmail" placeholder="Target Gmail (Optional)" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs outline-none text-white">
-                            <input type="text" id="t-msg" placeholder="Special Instructions (Optional)" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs outline-none text-white">
-                        </div>
                         <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs">Publish Task</button>
                     </form>
                 </div>
@@ -150,15 +144,11 @@
         const mapsLink = document.getElementById('t-maps').value.trim();
         const reward = parseFloat(document.getElementById('t-reward').value);
         const reviewText = document.getElementById('t-review').value.trim();
-        const targetGmail = document.getElementById('t-target-gmail').value.trim();
-        const adminMsg = document.getElementById('t-msg').value.trim();
 
         const { error } = await _supabase.from('tasks').insert([{
             google_maps_link: mapsLink,
             reward: reward,
             review_text: reviewText,
-            target_gmail: targetGmail || null,
-            admin_message: adminMsg || null,
             status: 'active'
         }]);
 
@@ -166,8 +156,6 @@
             alert("Task created successfully!");
             document.getElementById('t-maps').value = '';
             document.getElementById('t-review').value = '';
-            document.getElementById('t-target-gmail').value = '';
-            document.getElementById('t-msg').value = '';
             loadAdminTasks();
         } else alert("Error: " + error.message);
     }
@@ -211,7 +199,6 @@
         if(subs && subs.length > 0) {
             let html = '';
             for(let s of subs) {
-                // Fetch user profile email/name
                 const { data: userProf } = await _supabase.from('profiles').select('full_name, email').eq('id', s.user_id).single();
                 const userName = userProf ? (userProf.full_name || userProf.email) : 'User';
                 const rewardAmount = s.tasks ? s.tasks.reward : 20;
@@ -237,15 +224,11 @@
     }
 
     async function approveSubmission(subId, userId, reward) {
-        // 1. Get user current balance
         const { data: prof } = await _supabase.from('profiles').select('balance').eq('id', userId).single();
         const currentBal = prof ? (prof.balance || 0) : 0;
         const newBal = currentBal + reward;
 
-        // 2. Update user balance
         await _supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
-
-        // 3. Update submission status to approved
         const { error } = await _supabase.from('submissions').update({ status: 'approved' }).eq('id', subId);
 
         if(!error) {
@@ -270,7 +253,6 @@
         if(wList && wList.length > 0) {
             let html = '';
             for(let w of wList) {
-                // Fetch user info
                 const { data: userProf } = await _supabase.from('profiles').select('full_name, email, balance').eq('id', w.user_id).single();
                 const userName = userProf ? (userProf.full_name || userProf.email) : 'User';
                 const userBal = userProf ? (userProf.balance || 0) : 0;
@@ -304,11 +286,7 @@
         }
 
         const newBal = currentBal - amount;
-
-        // 1. Deduct amount from user balance
         await _supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
-
-        // 2. Update withdrawal request status to approved/paid
         const { error } = await _supabase.from('withdrawals').update({ status: 'approved' }).eq('id', wId);
 
         if(!error) {
