@@ -57,10 +57,10 @@
         <!-- Dashboard App Main -->
         <div id="main-dashboard" class="hidden space-y-4">
             <div class="grid grid-cols-4 bg-white p-1 rounded-2xl border text-[11px] font-bold text-center">
-                <button onclick="showSection('tasks')" class="py-2 rounded-xl bg-blue-50 text-blue-600">Tasks</button>
-                <button onclick="showSection('withdraw')" class="py-2 rounded-xl text-slate-500">Withdraw</button>
-                <button onclick="showSection('profile')" class="py-2 rounded-xl text-slate-500">Profile</button>
-                <button onclick="showSection('history')" class="py-2 rounded-xl text-slate-500">History</button>
+                <button id="tab-btn-tasks" onclick="showSection('tasks')" class="py-2 rounded-xl bg-blue-50 text-blue-600">Tasks</button>
+                <button id="tab-btn-withdraw" onclick="showSection('withdraw')" class="py-2 rounded-xl text-slate-500">Withdraw</button>
+                <button id="tab-btn-profile" onclick="showSection('profile')" class="py-2 rounded-xl text-slate-500">Profile</button>
+                <button id="tab-btn-history" onclick="showSection('history')" class="py-2 rounded-xl text-slate-500">History</button>
             </div>
 
             <!-- SECTION: TASKS -->
@@ -247,49 +247,30 @@
     }
 
     async function loadUserTasks() {
-        const { data: tasks } = await _supabase.from('tasks')
+        // Step 1: يوزر جون پوريون سبمشنز (Submissions) حاصل ڪريو
+        const { data: subs } = await _supabase.from('submissions')
+            .select('task_id')
+            .eq('user_id', currentUser.id);
+
+        const submittedTaskIds = subs ? subs.map(s => s.task_id) : [];
+
+        // Step 2: يوزر کي صرف اهي ٽاسڪ ڏيکاريو جن جي Proof پينڊنگ يا سبمٽ ٿيل ناهي
+        let query = _supabase.from('tasks')
             .select('*')
             .eq('assigned_user_id', currentUser.id)
             .neq('status', 'completed')
             .order('id', { ascending: false });
 
-        const { data: subs } = await _supabase.from('submissions')
-            .select('task_id, status')
-            .eq('user_id', currentUser.id);
-
-        const subMap = {};
-        if(subs) subs.forEach(s => subMap[s.task_id] = s.status);
+        const { data: tasks } = await query;
 
         const container = document.getElementById('tasks-list');
         container.innerHTML = '';
 
-        if(tasks && tasks.length > 0) {
-            tasks.forEach(t => {
-                const isSubmitted = subMap[t.id];
-                
-                let proofContent = '';
-                if(isSubmitted === 'pending') {
-                    proofContent = `
-                        <div class="bg-amber-50 border border-amber-300 text-amber-800 p-3 rounded-xl text-center text-xs font-bold space-y-1">
-                            <span>⏳ پينڊنگ ريويو (Pending Review)</span>
-                            <p class="text-[10px] font-normal text-amber-700">توھان جو ٽاسڪ سبمٽ ٿي ويو آھي، ايڊمن جي فيصلي جو انتظار ڪريو.</p>
-                        </div>`;
-                } else if(isSubmitted === 'rejected') {
-                    proofContent = `
-                        <div class="bg-red-50 border border-red-300 text-red-700 p-2.5 rounded-xl text-center text-xs font-bold">
-                            ❌ ٽاسڪ رجيڪٽ ٿي ويو.
-                        </div>`;
-                } else {
-                    proofContent = `
-                        <div class="border-t pt-2 space-y-1">
-                            <label class="text-[10px] text-slate-500 font-bold block">3. Paste Full Review Share Text / Proof Link:</label>
-                            <div class="space-y-2">
-                                <textarea id="proof-link-${t.id}" rows="2" placeholder="Paste full share message or link here..." class="w-full border p-2 rounded-xl text-xs outline-none focus:border-blue-600"></textarea>
-                                <button onclick="submitTaskProof(${t.id})" class="w-full bg-emerald-600 text-white text-xs py-2 rounded-xl font-bold hover:bg-emerald-700">Submit Proof</button>
-                            </div>
-                        </div>`;
-                }
+        // فلٽر ڪريو تاڪي اڳ ۾ سبمٽ ٿيل ٽاسڪ يوزر لسٽ مان غائب ٿي وڃن
+        const activeTasks = tasks ? tasks.filter(t => !submittedTaskIds.includes(t.id)) : [];
 
+        if(activeTasks.length > 0) {
+            activeTasks.forEach(t => {
                 container.innerHTML += `
                     <div class="bg-white p-4 rounded-2xl border space-y-3">
                         <div class="flex justify-between items-center border-b pb-2">
@@ -311,7 +292,13 @@
                             <label class="text-[10px] text-slate-500 font-bold block mb-1">2. Open Location Link:</label>
                             <a href="${t.google_maps_link}" target="_blank" class="block text-center bg-blue-600 text-white text-xs py-2 rounded-xl font-bold">Google Maps ↗</a>
                         </div>
-                        ${proofContent}
+                        <div class="border-t pt-2 space-y-1">
+                            <label class="text-[10px] text-slate-500 font-bold block">3. Paste Full Review Share Text / Proof Link:</label>
+                            <div class="space-y-2">
+                                <textarea id="proof-link-${t.id}" rows="2" placeholder="Paste full share message or link here..." class="w-full border p-2 rounded-xl text-xs outline-none focus:border-blue-600"></textarea>
+                                <button onclick="submitTaskProof(${t.id})" class="w-full bg-emerald-600 text-white text-xs py-2 rounded-xl font-bold hover:bg-emerald-700">Submit Proof</button>
+                            </div>
+                        </div>
                     </div>
                 `;
             });
@@ -363,34 +350,43 @@
     function showSection(name) {
         ['tasks', 'withdraw', 'profile', 'history'].forEach(s => {
             document.getElementById(`sec-${s}`).classList.add('hidden');
+            const tabBtn = document.getElementById(`tab-btn-${s}`);
+            if(tabBtn) tabBtn.className = "py-2 rounded-xl text-slate-500";
         });
+
         document.getElementById(`sec-${name}`).classList.remove('hidden');
+        const activeBtn = document.getElementById(`tab-btn-${name}`);
+        if(activeBtn) activeBtn.className = "py-2 rounded-xl bg-blue-50 text-blue-600 font-bold";
+
         if(name === 'history') loadHistory();
     }
 
     async function loadHistory() {
         const container = document.getElementById('history-container');
-        container.innerHTML = 'Loading history...';
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Loading history...</p>';
 
         const { data: subs } = await _supabase.from('submissions').select('*, tasks(*)').eq('user_id', currentUser.id);
         const { data: wds } = await _supabase.from('withdrawals').select('*').eq('user_id', currentUser.id);
 
-        let html = '<h4 class="font-bold text-xs">Task Submissions:</h4>';
+        let html = '<h4 class="font-bold text-xs text-slate-700">Task Submissions:</h4>';
         if(subs && subs.length > 0) {
             subs.forEach(s => {
-                html += `<div class="bg-white p-2.5 rounded-xl border text-xs flex justify-between">
-                    <span>Task #${s.task_id}</span>
-                    <span class="font-bold ${s.status === 'approved' ? 'text-emerald-600' : s.status === 'rejected' ? 'text-red-600' : 'text-amber-600'}">${s.status}</span>
+                html += `<div class="bg-white p-2.5 rounded-xl border text-xs flex justify-between items-center shadow-sm">
+                    <div>
+                        <span class="font-bold text-slate-700">Task #${s.task_id}</span>
+                        <p class="text-[10px] text-slate-400">${s.tasks ? s.tasks.target_gmail : ''}</p>
+                    </div>
+                    <span class="font-bold px-2 py-0.5 rounded text-[11px] ${s.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : s.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}">${s.status}</span>
                 </div>`;
             });
         } else html += '<p class="text-[11px] text-slate-400">No submission history found.</p>';
 
-        html += '<h4 class="font-bold text-xs mt-3">Withdrawals:</h4>';
+        html += '<h4 class="font-bold text-xs text-slate-700 mt-4">Withdrawals:</h4>';
         if(wds && wds.length > 0) {
             wds.forEach(w => {
-                html += `<div class="bg-white p-2.5 rounded-xl border text-xs flex justify-between">
-                    <span>Rs. ${w.amount} PKR</span>
-                    <span class="font-bold ${w.status === 'approved' ? 'text-emerald-600' : 'text-amber-600'}">${w.status}</span>
+                html += `<div class="bg-white p-2.5 rounded-xl border text-xs flex justify-between items-center shadow-sm">
+                    <span class="font-bold text-slate-700">Rs. ${w.amount} PKR</span>
+                    <span class="font-bold px-2 py-0.5 rounded text-[11px] ${w.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${w.status}</span>
                 </div>`;
             });
         } else html += '<p class="text-[11px] text-slate-400">No withdrawal history found.</p>';
