@@ -101,7 +101,7 @@
                 <button onclick="logout()" class="w-full bg-red-50 text-red-600 border border-red-200 font-bold py-2 rounded-xl text-xs">Sign Out</button>
             </div>
 
-            <!-- SECTION: HISTORY (Scrollable Dropdown View) -->
+            <!-- SECTION: HISTORY -->
             <div id="sec-history" class="hidden bg-white p-4 rounded-2xl border space-y-3">
                 <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
                     <span>Full Task & Withdrawal History</span>
@@ -191,7 +191,7 @@
             await loadUserProfile();
             loadUserTasks();
         } else {
-            document.getElementById('auth-block').classList.remove('hidden');
+            document.getElementById('auth-block').classList.add('hidden');
             document.getElementById('main-dashboard').classList.add('hidden');
         }
     }
@@ -244,7 +244,6 @@
         const { data: subs } = await _supabase.from('submissions').select('task_id').eq('user_id', currentUser.id);
         const submittedTaskIds = subs ? subs.map(s => s.task_id) : [];
 
-        // ٽاسڪ اھي ايندا جيڪي يا ته سڀني لاءِ آهن (null) يا هن يوزر جي ايدي وارا آهن
         const { data: tasks, error } = await _supabase.from('tasks')
             .select('*')
             .or(`assigned_user_id.eq.${currentUser.id},assigned_user_id.is.null`)
@@ -283,18 +282,18 @@
                             <p class="text-slate-700">${adminMsgVal}</p>
                         </div>
                         <div class="space-y-1">
-                            <label class="text-[10px] text-slate-500 font-bold">1. Copy Review Comment:</label>
+                            <label class="text-[10px] text-slate-500 font-bold">Copy Review Comment (Box 1):</label>
                             <div class="flex gap-2">
                                 <input type="text" readonly id="task-txt-${t.id}" value="${reviewTextVal}" class="w-full bg-slate-50 border p-2 rounded-xl text-xs font-mono">
                                 <button onclick="copyTaskTxt(${t.id})" class="bg-slate-800 text-white text-xs px-3 rounded-xl font-bold">Copy</button>
                             </div>
                         </div>
                         <div>
-                            <label class="text-[10px] text-slate-500 font-bold block mb-1">2. Open Google Maps Location:</label>
-                            <a href="${mapsLinkVal}" target="_blank" class="block text-center bg-blue-600 text-white text-xs py-2 rounded-xl font-bold">Open Maps ↗</a>
+                            <label class="text-[10px] text-slate-500 font-bold block mb-1">Google Maps Location:</label>
+                            <a href="${mapsLinkVal}" target="_blank" class="block text-center bg-blue-600 text-white text-xs py-2 rounded-xl font-bold">Open Maps Location ↗</a>
                         </div>
                         <div class="border-t pt-2 space-y-1">
-                            <label class="text-[10px] text-slate-500 font-bold block">3. Paste Review Proof / Link:</label>
+                            <label class="text-[10px] text-slate-500 font-bold block">Submit Review Proof / Link:</label>
                             <div class="space-y-2">
                                 <textarea id="proof-input-${t.id}" rows="2" placeholder="Paste your review profile link or proof here..." class="w-full border p-2 rounded-xl text-xs outline-none focus:border-blue-600"></textarea>
                                 <button onclick="submitTaskProof(${t.id})" class="w-full bg-emerald-600 text-white text-xs py-2 rounded-xl font-bold hover:bg-emerald-700">Submit to Admin</button>
