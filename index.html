@@ -27,7 +27,7 @@
         <!-- Welcome Banner -->
         <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-4 rounded-2xl shadow space-y-2 text-xs">
             <h2 class="font-bold text-sm">🌟 Welcome!</h2>
-            <p>Register for free and start earning immediately. Just post reviews on assigned Google Maps locations using your old Gmail accounts and earn <strong>Rs. 20</strong> per approved review.</p>
+            <p>Post reviews on assigned Google Maps locations using your registered Gmail accounts and earn <strong>Rs. 20</strong> per approved review.</p>
         </div>
 
         <!-- Auth Block -->
@@ -76,10 +76,8 @@
             <div id="sec-withdraw" class="hidden bg-white p-4 rounded-2xl border space-y-3">
                 <h3 class="font-bold text-xs text-slate-700">Withdraw Funds</h3>
                 <p class="text-[11px] text-slate-500">Minimum withdrawal amount is <strong>Rs. 120</strong>.</p>
-
                 <input type="number" id="withdraw-amount" min="120" placeholder="Amount (Minimum 120 PKR)" class="w-full border p-2.5 rounded-xl text-xs outline-none">
-                <textarea id="withdraw-bank" rows="2" placeholder="Bank / EasyPaisa / JazzCash account number & details..." class="w-full border p-2.5 rounded-xl text-xs outline-none"></textarea>
-                
+                <textarea id="withdraw-bank" rows="2" placeholder="EasyPaisa / JazzCash / Bank account details..." class="w-full border p-2.5 rounded-xl text-xs outline-none"></textarea>
                 <button onclick="requestWithdrawal()" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-emerald-700">Submit Request</button>
             </div>
 
@@ -91,11 +89,11 @@
                     <input type="text" id="prof-country" placeholder="Pakistan" class="w-full border p-2 rounded-xl text-xs">
                 </div>
                 <div>
-                    <label class="text-[10px] text-slate-400 block mb-1">Bank Account Details</label>
-                    <input type="text" id="prof-bank" placeholder="EasyPaisa / JazzCash / Bank Details" class="w-full border p-2 rounded-xl text-xs">
+                    <label class="text-[10px] text-slate-400 block mb-1">Bank / Wallet Details</label>
+                    <input type="text" id="prof-bank" placeholder="EasyPaisa / JazzCash" class="w-full border p-2 rounded-xl text-xs">
                 </div>
                 <div>
-                    <label class="text-[11px] font-bold text-slate-600 block mb-1">Your Old Gmail Accounts:</label>
+                    <label class="text-[11px] font-bold text-slate-600 block mb-1">Your Gmail Accounts (Add multiple if you have):</label>
                     <div id="gmail-fields-container" class="space-y-2"></div>
                     <button onclick="addGmailField('')" class="mt-2 text-[11px] bg-slate-100 border px-3 py-1 rounded-lg font-bold text-blue-600">+ Add Gmail Account</button>
                 </div>
@@ -103,19 +101,15 @@
                 <button onclick="logout()" class="w-full bg-red-50 text-red-600 border border-red-200 font-bold py-2 rounded-xl text-xs">Sign Out</button>
             </div>
 
-            <!-- SECTION: HISTORY -->
-            <div id="sec-history" class="hidden space-y-3">
-                <h3 class="font-bold text-xs text-slate-700">Task & Withdrawal History</h3>
-                <div id="history-container" class="space-y-2"></div>
-            </div>
-
-            <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-[11px] text-amber-900 space-y-1">
-                <h4 class="font-bold text-amber-800">📜 Terms & Conditions:</h4>
-                <ul class="list-disc list-inside space-y-1 text-[10.5px]">
-                    <li>You must use established/old Gmail accounts.</li>
-                    <li>Tasks must be performed strictly using the assigned Gmail account.</li>
-                    <li>Repeated reviews from the same Gmail account will be rejected.</li>
-                </ul>
+            <!-- SECTION: HISTORY (Scrollable Dropdown View) -->
+            <div id="sec-history" class="hidden bg-white p-4 rounded-2xl border space-y-3">
+                <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
+                    <span>Full Task & Withdrawal History</span>
+                    <button onclick="loadHistory()" class="text-[10px] text-blue-600 underline">Refresh</button>
+                </h3>
+                <div class="max-h-[350px] overflow-y-auto pr-1 space-y-3" id="history-container">
+                    <p class="text-xs text-slate-400 text-center py-4">Loading history...</p>
+                </div>
             </div>
         </div>
 
@@ -181,7 +175,7 @@
         const { data, error } = await _supabase.auth.signUp({ email, password });
         if (error) showAuthMsg(error.message, true);
         else if(data.user) {
-            await _supabase.from('profiles').upsert([{ id: data.user.id, full_name: name, phone: phone, email: email, balance: 0 }]);
+            await _supabase.from('profiles').upsert([{ id: data.user.id, full_name: name, phone: phone, email: email, balance: 0, gmail_accounts: [email] }]);
             showAuthMsg("Account created successfully! Please sign in.", false);
             switchAuthTab('login');
         }
@@ -194,7 +188,6 @@
             document.getElementById('auth-block').classList.add('hidden');
             document.getElementById('main-dashboard').classList.remove('hidden');
             document.getElementById('user-email-text').innerText = user.email;
-
             await loadUserProfile();
             loadUserTasks();
         } else {
@@ -214,7 +207,7 @@
 
             const container = document.getElementById('gmail-fields-container');
             container.innerHTML = '';
-            const gmails = prof.gmail_accounts || [''];
+            const gmails = (prof.gmail_accounts && prof.gmail_accounts.length > 0) ? prof.gmail_accounts : [currentUser.email];
             gmails.forEach(g => addGmailField(g));
         }
     }
@@ -224,7 +217,7 @@
         const div = document.createElement('div');
         div.className = 'flex gap-2 items-center';
         div.innerHTML = `
-            <input type="email" value="${val}" placeholder="example@gmail.com" class="gmail-input w-full border p-2 rounded-xl text-xs outline-none">
+            <input type="email" value="${val}" placeholder="account@gmail.com" class="gmail-input w-full border p-2 rounded-xl text-xs outline-none">
             <button onclick="this.parentElement.remove()" class="text-red-500 font-bold px-2">✕</button>
         `;
         container.appendChild(div);
@@ -243,17 +236,15 @@
             gmail_accounts: gmailList
         }).eq('id', currentUser.id);
 
-        if(!error) alert("Profile updated successfully!");
+        if(!error) alert("Profile & Gmail accounts updated successfully!");
         else alert(error.message);
     }
 
     async function loadUserTasks() {
-        const { data: subs } = await _supabase.from('submissions')
-            .select('task_id')
-            .eq('user_id', currentUser.id);
-
+        const { data: subs } = await _supabase.from('submissions').select('task_id').eq('user_id', currentUser.id);
         const submittedTaskIds = subs ? subs.map(s => s.task_id) : [];
 
+        // ٽاسڪ اھي ايندا جيڪي يا ته سڀني لاءِ آهن (null) يا هن يوزر جي ايدي وارا آهن
         const { data: tasks, error } = await _supabase.from('tasks')
             .select('*')
             .or(`assigned_user_id.eq.${currentUser.id},assigned_user_id.is.null`)
@@ -264,7 +255,7 @@
         container.innerHTML = '';
 
         if(error) {
-            container.innerHTML = `<p class="text-xs text-red-500 text-center py-4">Error loading tasks: ${error.message}</p>`;
+            container.innerHTML = `<p class="text-xs text-red-500 text-center py-4">Error: ${error.message}</p>`;
             return;
         }
 
@@ -272,9 +263,10 @@
 
         if(activeTasks.length > 0) {
             activeTasks.forEach(t => {
-                const targetGmailText = t.target_gmail ? t.target_gmail : 'Any Gmail Account';
-                const reviewTextVal = t.review_text ? t.review_text : '';
-                const mapsLinkVal = t.google_maps_link ? t.google_maps_link : '#';
+                const targetGmailText = t.target_gmail ? t.target_gmail : 'Any of your registered Gmails';
+                const reviewTextVal = t.review_text || '';
+                const adminMsgVal = t.admin_message || 'Please complete task carefully.';
+                const mapsLinkVal = t.google_maps_link || '#';
 
                 container.innerHTML += `
                     <div class="bg-white p-4 rounded-2xl border space-y-3 shadow-sm">
@@ -283,25 +275,29 @@
                             <span class="text-emerald-600 font-bold text-xs">+ Rs. ${t.reward || 20} PKR</span>
                         </div>
                         <div class="bg-blue-50 border border-blue-200 p-2.5 rounded-xl text-xs space-y-1">
-                            <span class="font-bold text-blue-700 block">⚠️ Target Gmail:</span>
+                            <span class="font-bold text-blue-700 block">📌 Target Gmail to Use:</span>
                             <p class="font-mono bg-white p-1 rounded border text-center text-blue-600 font-bold select-all">${targetGmailText}</p>
                         </div>
+                        <div class="bg-amber-50/70 border border-amber-200 p-2.5 rounded-xl text-xs space-y-1">
+                            <span class="font-bold text-amber-800 block">💬 Admin Message / Instruction:</span>
+                            <p class="text-slate-700">${adminMsgVal}</p>
+                        </div>
                         <div class="space-y-1">
-                            <label class="text-[10px] text-slate-500 font-bold">1. Copy Review Text (Comment):</label>
+                            <label class="text-[10px] text-slate-500 font-bold">1. Copy Review Comment:</label>
                             <div class="flex gap-2">
                                 <input type="text" readonly id="task-txt-${t.id}" value="${reviewTextVal}" class="w-full bg-slate-50 border p-2 rounded-xl text-xs font-mono">
                                 <button onclick="copyTaskTxt(${t.id})" class="bg-slate-800 text-white text-xs px-3 rounded-xl font-bold">Copy</button>
                             </div>
                         </div>
                         <div>
-                            <label class="text-[10px] text-slate-500 font-bold block mb-1">2. Open Location Link:</label>
-                            <a href="${mapsLinkVal}" target="_blank" class="block text-center bg-blue-600 text-white text-xs py-2 rounded-xl font-bold">Google Maps ↗</a>
+                            <label class="text-[10px] text-slate-500 font-bold block mb-1">2. Open Google Maps Location:</label>
+                            <a href="${mapsLinkVal}" target="_blank" class="block text-center bg-blue-600 text-white text-xs py-2 rounded-xl font-bold">Open Maps ↗</a>
                         </div>
                         <div class="border-t pt-2 space-y-1">
-                            <label class="text-[10px] text-slate-500 font-bold block">3. Paste Review Share Link / Proof Details:</label>
+                            <label class="text-[10px] text-slate-500 font-bold block">3. Paste Review Proof / Link:</label>
                             <div class="space-y-2">
-                                <textarea id="proof-input-${t.id}" rows="2" placeholder="Paste full share link or proof message here..." class="w-full border p-2 rounded-xl text-xs outline-none focus:border-blue-600"></textarea>
-                                <button onclick="submitTaskProof(${t.id})" class="w-full bg-emerald-600 text-white text-xs py-2 rounded-xl font-bold hover:bg-emerald-700">Submit Proof</button>
+                                <textarea id="proof-input-${t.id}" rows="2" placeholder="Paste your review profile link or proof here..." class="w-full border p-2 rounded-xl text-xs outline-none focus:border-blue-600"></textarea>
+                                <button onclick="submitTaskProof(${t.id})" class="w-full bg-emerald-600 text-white text-xs py-2 rounded-xl font-bold hover:bg-emerald-700">Submit to Admin</button>
                             </div>
                         </div>
                     </div>
@@ -316,13 +312,12 @@
         const el = document.getElementById(`task-txt-${id}`);
         el.select();
         navigator.clipboard.writeText(el.value);
-        alert("Review text copied!");
+        alert("Review comment copied!");
     }
 
     async function submitTaskProof(taskId) {
         const proofField = document.getElementById(`proof-input-${taskId}`);
-        if(!proofField) return alert("System error: Input box not found!");
-
+        if(!proofField) return;
         const rawText = proofField.value.trim();
         if(!rawText) return alert("Please paste your review link or proof details first!");
 
@@ -333,9 +328,7 @@
         if(!error) {
             alert("Proof submitted successfully to Admin!");
             loadUserTasks();
-        } else {
-            alert("Submission error: " + error.message);
-        }
+        } else alert("Error: " + error.message);
     }
 
     async function requestWithdrawal() {
@@ -343,8 +336,8 @@
         const bank = document.getElementById('withdraw-bank').value.trim();
 
         if(!amt || amt < 120) return alert("Minimum withdrawal amount is Rs. 120!");
-        if(amt > currentUserBalance) return alert(`توھان وٽ ڪافي بيلنس ناھي! توھان جو بيلنس Rs. ${currentUserBalance} آھي.`);
-        if(!bank) return alert("Please enter payment/bank account details!");
+        if(amt > currentUserBalance) return alert(`توھان وٽ ڪافي بيلنس ناھي! بيلنس: Rs. ${currentUserBalance}`);
+        if(!bank) return alert("Please enter payment details!");
 
         const { error } = await _supabase.from('withdrawals').insert([
             { user_id: currentUser.id, amount: amt, payment_method_details: bank }
@@ -375,31 +368,31 @@
         const container = document.getElementById('history-container');
         container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Loading history...</p>';
 
-        const { data: subs } = await _supabase.from('submissions').select('*, tasks(*)').eq('user_id', currentUser.id);
-        const { data: wds } = await _supabase.from('withdrawals').select('*').eq('user_id', currentUser.id);
+        const { data: subs } = await _supabase.from('submissions').select('*, tasks(*)').eq('user_id', currentUser.id).order('id', { ascending: false });
+        const { data: wds } = await _supabase.from('withdrawals').select('*').eq('user_id', currentUser.id).order('id', { ascending: false });
 
-        let html = '<h4 class="font-bold text-xs text-slate-700">Task Submissions:</h4>';
+        let html = '<h4 class="font-bold text-xs text-slate-700">Task Submissions History:</h4>';
         if(subs && subs.length > 0) {
             subs.forEach(s => {
-                html += `<div class="bg-white p-2.5 rounded-xl border text-xs flex justify-between items-center shadow-sm">
+                html += `<div class="bg-slate-50 p-2.5 rounded-xl border text-xs flex justify-between items-center">
                     <div>
                         <span class="font-bold text-slate-700">Task #${s.task_id}</span>
-                        <p class="text-[10px] text-slate-400 truncate max-w-[180px]">${s.proof_link || 'No Link'}</p>
+                        <p class="text-[10px] text-slate-400 truncate max-w-[170px]">${s.proof_link || 'No Proof'}</p>
                     </div>
-                    <span class="font-bold px-2 py-0.5 rounded text-[11px] ${s.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : s.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}">${s.status}</span>
+                    <span class="font-bold px-2 py-0.5 rounded text-[10px] ${s.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : s.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}">${s.status}</span>
                 </div>`;
             });
-        } else html += '<p class="text-[11px] text-slate-400">No submission history found.</p>';
+        } else html += '<p class="text-[11px] text-slate-400">No submission records found.</p>';
 
-        html += '<h4 class="font-bold text-xs text-slate-700 mt-4">Withdrawals:</h4>';
+        html += '<h4 class="font-bold text-xs text-slate-700 mt-4">Withdrawals History:</h4>';
         if(wds && wds.length > 0) {
             wds.forEach(w => {
-                html += `<div class="bg-white p-2.5 rounded-xl border text-xs flex justify-between items-center shadow-sm">
+                html += `<div class="bg-slate-50 p-2.5 rounded-xl border text-xs flex justify-between items-center">
                     <span class="font-bold text-slate-700">Rs. ${w.amount} PKR</span>
-                    <span class="font-bold px-2 py-0.5 rounded text-[11px] ${w.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${w.status}</span>
+                    <span class="font-bold px-2 py-0.5 rounded text-[10px] ${w.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${w.status}</span>
                 </div>`;
             });
-        } else html += '<p class="text-[11px] text-slate-400">No withdrawal history found.</p>';
+        } else html += '<p class="text-[11px] text-slate-400">No withdrawal records found.</p>';
 
         container.innerHTML = html;
     }
