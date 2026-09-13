@@ -1,100 +1,100 @@
 <!DOCTYPE html>
-<html lang="sd" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Complete Admin Control Center</title>
+    <title>Admin Control Center</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Google Fonts for Sindhi / Arabic -->
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Noto Naskh Arabic', sans-serif; } </style>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Inter', sans-serif; } </style>
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen p-4">
 
-    <!-- Admin Auth Login Modal -->
+    <!-- Admin Authentication Modal -->
     <div id="admin-auth-modal" class="fixed inset-0 bg-slate-950/95 flex items-center justify-center p-4 z-50">
         <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl w-full max-w-md space-y-4">
-            <h2 class="text-xl font-bold text-emerald-400 text-center">🛡️ ايڊمن پينل لاگ ان</h2>
-            <p class="text-xs text-slate-400 text-center">پنهنجي ايڊمن اڪائونٽ سان سائن ان ڪريو</p>
+            <h2 class="text-xl font-bold text-emerald-400 text-center">🛡️ Admin Panel Login</h2>
+            <p class="text-xs text-slate-400 text-center">Sign in with your administrator account</p>
             
             <div class="space-y-3">
-                <input type="email" id="admin-email-input" value="aliakbarshar@gmail.com" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 text-left" dir="ltr">
-                <input type="password" id="admin-pass-input" placeholder="Password" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 text-left" dir="ltr">
-                <button onclick="handleAdminLogin()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition">لاگ ان ڪريو 🔓</button>
+                <input type="email" id="admin-email-input" value="aliakbarshar@gmail.com" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                <input type="password" id="admin-pass-input" placeholder="Password" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                <button onclick="handleAdminLogin()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition">Login to Panel 🔓</button>
                 <p id="admin-auth-err" class="text-xs text-red-400 text-center hidden"></p>
             </div>
         </div>
     </div>
 
-    <!-- Main Dashboard Container -->
+    <!-- Main Dashboard Layout -->
     <div class="max-w-7xl mx-auto space-y-6">
         
-        <!-- Header -->
+        <!-- Top Header -->
         <header class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
             <div>
-                <h1 class="font-bold text-emerald-400 text-xl">⚙️ ايڊمن ڪنٽرول سينٽر</h1>
-                <p id="admin-status-lbl" class="text-xs text-slate-400">لاگ ان جي تصديق ٿي رهي آهي...</p>
+                <h1 class="font-bold text-emerald-400 text-xl">⚙️ Admin Dashboard</h1>
+                <p id="admin-status-lbl" class="text-xs text-slate-400">Verifying session...</p>
             </div>
-            <button onclick="adminLogout()" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-700/50 px-3 py-1.5 rounded-lg text-xs font-bold">لاگ آئوٽ 🔒</button>
+            <button onclick="adminLogout()" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-700/50 px-3 py-1.5 rounded-lg text-xs font-bold">Logout 🔒</button>
         </header>
 
         <!-- Navigation Tabs -->
         <div class="flex gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
             <button id="tab-btn-submissions" onclick="switchAdminTab('submissions')" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold border border-emerald-500">
-                ✅ يوزر جا مڪمل ٿيل ٽاسڪ (Proofs Review)
+                ✅ Completed Tasks & Proofs
             </button>
             <button id="tab-btn-create-task" onclick="switchAdminTab('create-task')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
-                ➕ يوزر ڏانهن ٽاسڪ موڪليو (Create Task)
+                ➕ Publish Task for Users
             </button>
             <button id="tab-btn-users-list" onclick="switchAdminTab('users-list')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
-                👥 رجسٽرڊ يوزرس ۽ Gmail لسٽ
+                👥 Registered Users & Gmails
             </button>
             <button id="tab-btn-client-orders" onclick="switchAdminTab('client-orders')" class="bg-slate-800 text-slate-400 hover:text-white px-4 py-2 rounded-xl text-xs font-bold border border-slate-700">
-                💼 ڪلائنٽ آرڊرس (Client Orders)
+                💼 Client Orders
             </button>
         </div>
 
-        <!-- ================= TAB 1: WORKER PROOFS & COMPLETED TASKS ================= -->
+        <!-- ================= TAB 1: USER PROOFS REVIEW ================= -->
         <section id="tab-content-submissions" class="space-y-4">
             <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
                 <div>
-                    <h2 class="font-bold text-base text-emerald-400">🔍 يوزر پاران پورا ڪيل ٽاسڪ ۽ ثبوت</h2>
-                    <p class="text-xs text-slate-400">هتي يوزر پاران جمع ٿيل Gmail، ٽاسڪ لنڪ ۽ تصويري ثبوت چيڪ ڪري جائزي کانپوءِ رقم اپروو ڪريو.</p>
+                    <h2 class="font-bold text-base text-emerald-400">🔍 Task Submissions & Verification</h2>
+                    <p class="text-xs text-slate-400">Verify user screenshots, review Gmails, and approve/reject rewards.</p>
                 </div>
-                <button onclick="loadWorkerSubmissions()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ ريفريش</button>
+                <button onclick="loadWorkerSubmissions()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ Refresh</button>
             </div>
 
             <div id="submissions-list-container" class="space-y-4">
-                <p class="text-xs text-slate-500">ڊيٽا لوڊ ٿي رهي آهي...</p>
+                <p class="text-xs text-slate-500">Loading submission data...</p>
             </div>
         </section>
 
-        <!-- ================= TAB 2: CREATE & PUBLISH TASK FOR USERS ================= -->
+        <!-- ================= TAB 2: PUBLISH TASK FOR USERS ================= -->
         <section id="tab-content-create-task" class="hidden space-y-4">
             <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
-                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">➕ يوزرس لاءِ نئون ٽاسڪ جاري ڪريو</h2>
+                <h2 class="font-bold text-base text-emerald-400 border-b border-slate-700 pb-2">➕ Publish New Task to User Dashboard</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">ٽاسڪ جو عنوان (Task Title) *</label>
-                        <input type="text" id="task-title" placeholder="مثال: Google Maps تي 5-Star Review ڏيو" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                        <label class="block text-xs text-slate-400 mb-1">Task Title *</label>
+                        <input type="text" id="task-title" placeholder="e.g. Leave 5-Star Review on Google Maps" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
                     </div>
                     <div>
-                        <label class="block text-xs text-slate-400 mb-1">يوزر جو انعام / ريوارڊ (PKR) *</label>
-                        <input type="number" id="task-reward" placeholder="مثال: 50" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
+                        <label class="block text-xs text-slate-400 mb-1">Worker Reward (PKR) *</label>
+                        <input type="number" id="task-reward" placeholder="e.g. 50" class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-xs text-slate-400 mb-1">گوگل مئپ يا مطلوبہ حدف جو لنڪ (Target Link) *</label>
-                        <input type="url" id="task-link" placeholder="https://maps.google.com/..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 text-left" dir="ltr">
+                        <label class="block text-xs text-slate-400 mb-1">Target Google Maps Link *</label>
+                        <input type="url" id="task-link" placeholder="https://maps.google.com/..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500">
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-xs text-slate-400 mb-1">يوزر لاءِ ھدايتون / خاص ڪمنٽس (Task Instructions) *</label>
-                        <textarea id="task-desc" placeholder="يوزر کي ڪهڙو تبصرو (Comment) لکڻو آهي، انجون پوريون هدايتون لکو..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 h-24"></textarea>
+                        <label class="block text-xs text-slate-400 mb-1">Task Instructions / Required Comments *</label>
+                        <textarea id="task-desc" placeholder="Specify comment text or guidelines for workers..." class="w-full bg-slate-900 border border-slate-700 p-2.5 rounded-xl text-xs text-white outline-none focus:border-emerald-500 h-24"></textarea>
                     </div>
                 </div>
-                <button onclick="publishWorkerTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition">يوزر پينل تي ٽاسڪ موڪليو 🚀</button>
+                <button onclick="publishWorkerTask()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl text-xs transition">Publish Task 🚀</button>
             </div>
         </section>
 
@@ -102,20 +102,20 @@
         <section id="tab-content-users-list" class="hidden space-y-4">
             <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
                 <div>
-                    <h2 class="font-bold text-base text-emerald-400">👥 رجسٽرڊ يوزرس ۽ Gmail لسٽ</h2>
-                    <p class="text-xs text-slate-400">سسٽم ۾ رجسٽرڊ ٿيل سڀني يوزرس جون Gmails ۽ سندن والٽ بيلنس.</p>
+                    <h2 class="font-bold text-base text-emerald-400">👥 Registered Users & Email Records</h2>
+                    <p class="text-xs text-slate-400">List of registered users, their emails, and current wallet balances.</p>
                 </div>
-                <button onclick="loadRegisteredUsers()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ ريفريش يوزرس</button>
+                <button onclick="loadRegisteredUsers()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ Refresh Users</button>
             </div>
 
             <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-x-auto">
-                <table class="w-full text-right border-collapse">
+                <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-slate-900 border-b border-slate-700 text-slate-400 text-xs">
                             <th class="p-3">User ID</th>
-                            <th class="p-3">يوزر Gmail</th>
-                            <th class="p-3">موجودھ بيلنس (PKR)</th>
-                            <th class="p-3">رجسٽريشن تاريخ</th>
+                            <th class="p-3">User Email (Gmail)</th>
+                            <th class="p-3">Wallet Balance (PKR)</th>
+                            <th class="p-3">Registered Date</th>
                         </tr>
                     </thead>
                     <tbody id="users-table-body" class="divide-y divide-slate-700/50 text-xs">
@@ -129,14 +129,14 @@
         <section id="tab-content-client-orders" class="hidden space-y-4">
             <div class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
                 <div>
-                    <h2 class="font-bold text-base text-emerald-400">💼 ڪلائنٽس جون ريڪوئسٽون</h2>
-                    <p class="text-xs text-slate-400">ڪلائنٽس پاران ڏنل آرڊر چيڪ ڪريو ۽ WhatsApp تي رابطو ڪريو.</p>
+                    <h2 class="font-bold text-base text-emerald-400">💼 Client Service Orders</h2>
+                    <p class="text-xs text-slate-400">Orders submitted by clients for reviews.</p>
                 </div>
-                <button onclick="loadAdminClientOrders()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ ريفريش</button>
+                <button onclick="loadAdminClientOrders()" class="bg-slate-900 hover:bg-slate-950 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold">↻ Refresh Orders</button>
             </div>
 
             <div id="admin-client-orders-container" class="space-y-4">
-                <p class="text-xs text-slate-500">لوڊ ٿي رهيو آهي...</p>
+                <p class="text-xs text-slate-500">Loading client orders...</p>
             </div>
         </section>
 
@@ -204,11 +204,11 @@
         });
     }
 
-    // ================= 1. VERIFY COMPLETED TASKS & PROOFS =================
+    // ================= 1. SUBMISSIONS & PROOFS REVIEW =================
 
     async function loadWorkerSubmissions() {
         const container = document.getElementById('submissions-list-container');
-        container.innerHTML = '<p class="text-xs text-slate-500">پورا ڪيل ٽاسڪ لوڊ ٿي رهيا آهن...</p>';
+        container.innerHTML = '<p class="text-xs text-slate-500">Loading submitted tasks...</p>';
 
         const { data: subs, error } = await _supabase.from('submissions')
             .select('*, tasks(title, reward), profiles(email)')
@@ -220,7 +220,7 @@
         }
 
         if (!subs || subs.length === 0) {
-            container.innerHTML = '<p class="text-xs text-slate-500">کوئي به يوزر ثبوت جمع نه ڪرايو آهي.</p>';
+            container.innerHTML = '<p class="text-xs text-slate-500">No task submissions found yet.</p>';
             return;
         }
 
@@ -236,7 +236,7 @@
                     <div class="flex justify-between items-start border-b border-slate-700 pb-2">
                         <div>
                             <h3 class="text-sm font-bold text-slate-200">${taskTitle}</h3>
-                            <p class="text-[11px] text-slate-400">يوزر Gmail: <strong class="text-emerald-400 font-mono">${workerEmail}</strong> | ريوارڊ: <strong class="text-amber-400">PKR ${reward}</strong></p>
+                            <p class="text-[11px] text-slate-400">Worker Email: <strong class="text-emerald-400 font-mono">${workerEmail}</strong> | Reward: <strong class="text-amber-400">PKR ${reward}</strong></p>
                         </div>
                         <span class="px-2.5 py-1 text-[10px] font-bold rounded-lg ${s.status === 'approved' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : s.status === 'rejected' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}">
                             ${s.status.toUpperCase()}
@@ -245,19 +245,19 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                         <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-                            <span class="text-slate-500 font-bold block">يوزر جنهن Gmail سان ريويو ڏنو:</span>
+                            <span class="text-slate-500 font-bold block">Gmail used for Review:</span>
                             <span class="text-white font-mono">${s.target_gmail || 'N/A'}</span>
                         </div>
                         <div class="bg-slate-900 p-2.5 rounded-lg border border-slate-800">
-                            <span class="text-slate-500 font-bold block">ثبوت (Screenshot / Link):</span>
-                            ${s.proof_url ? `<a href="${s.proof_url}" target="_blank" class="text-blue-400 underline break-all">${s.proof_url}</a>` : '<span class="text-slate-500">نشي ڏنو ويو</span>'}
+                            <span class="text-slate-500 font-bold block">Proof Link / Screenshot:</span>
+                            ${s.proof_url ? `<a href="${s.proof_url}" target="_blank" class="text-blue-400 underline break-all">${s.proof_url}</a>` : '<span class="text-slate-500">Not provided</span>'}
                         </div>
                     </div>
 
                     ${s.status === 'pending' ? `
                         <div class="flex gap-2 pt-2">
-                            <button onclick="updateSubmissionStatus(${s.id}, 'approved', '${s.user_id}', ${reward})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs">منظور ڪريو (Approve & Pay PKR ${reward})</button>
-                            <button onclick="updateSubmissionStatus(${s.id}, 'rejected', '${s.user_id}', 0)" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-800 font-bold px-4 py-2 rounded-xl text-xs">رد ڪريو (Reject)</button>
+                            <button onclick="updateSubmissionStatus(${s.id}, 'approved', '${s.user_id}', ${reward})" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-xl text-xs">Approve & Pay PKR ${reward}</button>
+                            <button onclick="updateSubmissionStatus(${s.id}, 'rejected', '${s.user_id}', 0)" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-800 font-bold px-4 py-2 rounded-xl text-xs">Reject</button>
                         </div>
                     ` : ''}
                 </div>
@@ -275,11 +275,12 @@
             await _supabase.from('profiles').update({ balance: curBal + rewardAmt }).eq('id', workerId);
         }
 
-        alert(`ٽاسڪ #${subId} جو نتيجو ${newStatus} ڪيو ويو!`);
+        alert(`Submission #${subId} marked as ${newStatus}`);
         loadWorkerSubmissions();
+        loadRegisteredUsers();
     }
 
-    // ================= 2. PUBLISH TASK FOR USERS =================
+    // ================= 2. PUBLISH WORKER TASK =================
 
     async function publishWorkerTask() {
         const title = document.getElementById('task-title').value.trim();
@@ -288,16 +289,16 @@
         const desc = document.getElementById('task-desc').value.trim();
 
         if (!title || !reward || !link) {
-            return alert("ٽاسڪ جو عنوان، انعام ۽ لنڪ لازمي لکو!");
+            return alert("Please fill Title, Reward, and Map Link.");
         }
 
         const { error } = await _supabase.from('tasks').insert([{
             title, reward, link, description: desc
         }]);
 
-        if (error) alert("ٽاسڪ نٿو موڪلي سگهجي: " + error.message);
+        if (error) alert("Failed to publish task: " + error.message);
         else {
-            alert("ٽاسڪ يوزر پينل ڏانهن ڪاميابيءَ سان موڪليو ويو! 🚀");
+            alert("Task published successfully to users portal! 🚀");
             document.getElementById('task-title').value = '';
             document.getElementById('task-reward').value = '';
             document.getElementById('task-link').value = '';
@@ -306,21 +307,22 @@
         }
     }
 
-    // ================= 3. LOAD REGISTERED USERS LIST =================
+    // ================= 3. LOAD ALL REGISTERED USERS =================
 
     async function loadRegisteredUsers() {
         const tbody = document.getElementById('users-table-body');
-        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">يوزرس لوڊ ٿي رهيا آهن...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Loading user accounts...</td></tr>';
 
+        // Direct fetch profiles table
         const { data: users, error } = await _supabase.from('profiles').select('*').order('created_at', { ascending: false });
 
         if (error) {
-            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-400">Error: ${error.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-red-400">Error loading profiles: ${error.message}</td></tr>`;
             return;
         }
 
         if (!users || users.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">کوئي يوزر رجسٽر ٿيل ناهي.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">No registered users found in Database.</td></tr>';
             return;
         }
 
@@ -329,9 +331,9 @@
             tbody.innerHTML += `
                 <tr class="hover:bg-slate-800/50">
                     <td class="p-3 font-mono text-[10px] text-slate-400">${u.id}</td>
-                    <td class="p-3 font-mono font-bold text-emerald-400" dir="ltr">${u.email || 'No Email'}</td>
+                    <td class="p-3 font-mono font-bold text-emerald-400">${u.email || 'Email Unset'}</td>
                     <td class="p-3 font-bold text-amber-400">PKR ${u.balance || 0}</td>
-                    <td class="p-3 text-slate-500">${new Date(u.created_at).toLocaleDateString()}</td>
+                    <td class="p-3 text-slate-500">${new Date(u.created_at || Date.now()).toLocaleDateString()}</td>
                 </tr>
             `;
         });
@@ -341,7 +343,7 @@
 
     async function loadAdminClientOrders() {
         const container = document.getElementById('admin-client-orders-container');
-        container.innerHTML = '<p class="text-xs text-slate-500">ڪلائنٽس جا آرڊر لوڊ ٿي رهيا آهن...</p>';
+        container.innerHTML = '<p class="text-xs text-slate-500">Loading client orders...</p>';
 
         const { data: orders, error } = await _supabase.from('client_orders').select('*').order('created_at', { ascending: false });
 
@@ -351,7 +353,7 @@
         }
 
         if (!orders || orders.length === 0) {
-            container.innerHTML = '<p class="text-xs text-slate-500">کوئي به آرڊر ناهي آيو.</p>';
+            container.innerHTML = '<p class="text-xs text-slate-500">No client orders received yet.</p>';
             return;
         }
 
@@ -368,7 +370,7 @@
                 }
             }
 
-            const encodedWaMsg = encodeURIComponent(`السلام علیکم! توهان جي Google Maps Review آرڊر بابت رابطو ڪيو ويو آهي.`);
+            const encodedWaMsg = encodeURIComponent("Hello! Regarding your Google Maps Review order.");
             const waLink = clientPhone ? `https://wa.me/${clientPhone.replace(/[^0-9]/g, '')}?text=${encodedWaMsg}` : '#';
 
             container.innerHTML += `
@@ -378,10 +380,10 @@
                         <span class="text-xs text-slate-400">Client Email: <strong class="text-white">${clientEmail}</strong></span>
                     </div>
                     <div class="text-xs text-slate-300">
-                        <p>تعداد: <strong>${ord.quantity} Reviews</strong></p>
+                        <p>Quantity: <strong>${ord.quantity} Reviews</strong></p>
                         <p>Google Maps Link: <a href="${ord.google_maps_link}" target="_blank" class="text-blue-400 underline break-all">${ord.google_maps_link}</a></p>
                     </div>
-                    ${clientPhone ? `<a href="${waLink}" target="_blank" class="inline-block bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg text-xs">💬 WhatsApp تي رابطو ڪريو (${clientPhone})</a>` : ''}
+                    ${clientPhone ? `<a href="${waLink}" target="_blank" class="inline-block bg-emerald-600 text-white font-bold px-3 py-1.5 rounded-lg text-xs">💬 Contact via WhatsApp (${clientPhone})</a>` : ''}
                 </div>
             `;
         }
