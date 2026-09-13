@@ -11,9 +11,7 @@
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen p-3 md:p-6">
 
-    <!-- Mobile Container -->
     <div class="max-w-md mx-auto space-y-4">
-
         <!-- Header -->
         <header class="bg-blue-700 text-white p-4 rounded-2xl shadow-lg flex justify-between items-center">
             <div>
@@ -29,10 +27,10 @@
         <!-- Welcome Banner -->
         <div class="bg-gradient-to-r from-emerald-600 to-teal-700 text-white p-4 rounded-2xl shadow space-y-2 text-xs">
             <h2 class="font-bold text-sm">🌟 Welcome!</h2>
-            <p>Register for free and start earning immediately. It's 100% legal and simple! Just post reviews on assigned Google Maps locations using your old Gmail accounts and earn <strong>Rs. 20</strong> per approved review.</p>
+            <p>Register for free and start earning immediately. Just post reviews on assigned Google Maps locations using your old Gmail accounts and earn <strong>Rs. 20</strong> per approved review.</p>
         </div>
 
-        <!-- Auth Block (Login / Register) -->
+        <!-- Auth Block -->
         <div id="auth-block" class="bg-white p-4 rounded-2xl border shadow space-y-4">
             <div class="flex border-b text-sm font-bold text-center">
                 <button id="tab-login-btn" onclick="switchAuthTab('login')" class="w-1/2 pb-2 border-b-2 border-blue-600 text-blue-600">Login</button>
@@ -41,14 +39,12 @@
 
             <p id="auth-msg" class="text-center text-xs font-bold hidden py-2 rounded-lg"></p>
 
-            <!-- Login Form -->
             <form id="login-form" onsubmit="event.preventDefault(); handleLogin();" class="space-y-3">
                 <input type="email" id="login-email" placeholder="Email Address" required class="w-full border p-2.5 rounded-xl text-xs outline-none focus:border-blue-600">
                 <input type="password" id="login-pass" placeholder="Password" required class="w-full border p-2.5 rounded-xl text-xs outline-none focus:border-blue-600">
                 <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-blue-700">Sign In</button>
             </form>
 
-            <!-- Register Form -->
             <form id="signup-form" onsubmit="event.preventDefault(); handleSignup();" class="space-y-3 hidden">
                 <input type="text" id="reg-name" placeholder="Full Name" required class="w-full border p-2.5 rounded-xl text-xs outline-none">
                 <input type="tel" id="reg-phone" placeholder="WhatsApp / Phone Number" required class="w-full border p-2.5 rounded-xl text-xs outline-none">
@@ -58,10 +54,8 @@
             </form>
         </div>
 
-        <!-- Dashboard App Main (Hidden until login) -->
+        <!-- Dashboard App Main -->
         <div id="main-dashboard" class="hidden space-y-4">
-            
-            <!-- Navigation Tabs -->
             <div class="grid grid-cols-4 bg-white p-1 rounded-2xl border text-[11px] font-bold text-center">
                 <button onclick="showSection('tasks')" class="py-2 rounded-xl bg-blue-50 text-blue-600">Tasks</button>
                 <button onclick="showSection('withdraw')" class="py-2 rounded-xl text-slate-500">Withdraw</button>
@@ -80,7 +74,7 @@
             <!-- SECTION: WITHDRAWAL -->
             <div id="sec-withdraw" class="hidden bg-white p-4 rounded-2xl border space-y-3">
                 <h3 class="font-bold text-xs text-slate-700">Withdraw Funds</h3>
-                <p class="text-[11px] text-slate-500">Note: Minimum withdrawal amount is <strong>Rs. 120</strong>. Funds will be deducted upon approval.</p>
+                <p class="text-[11px] text-slate-500">Minimum withdrawal amount is <strong>Rs. 120</strong>.</p>
 
                 <input type="number" id="withdraw-amount" min="120" placeholder="Amount (Minimum 120 PKR)" class="w-full border p-2.5 rounded-xl text-xs outline-none">
                 <textarea id="withdraw-bank" rows="2" placeholder="Bank / EasyPaisa / JazzCash account number & Country..." class="w-full border p-2.5 rounded-xl text-xs outline-none"></textarea>
@@ -91,7 +85,6 @@
             <!-- SECTION: PROFILE -->
             <div id="sec-profile" class="hidden bg-white p-4 rounded-2xl border space-y-3">
                 <h3 class="font-bold text-xs text-slate-700">Profile & Gmail Accounts</h3>
-                
                 <div>
                     <label class="text-[10px] text-slate-400 block mb-1">Country</label>
                     <input type="text" id="prof-country" placeholder="Pakistan" class="w-full border p-2 rounded-xl text-xs">
@@ -100,14 +93,11 @@
                     <label class="text-[10px] text-slate-400 block mb-1">Bank Account Details</label>
                     <input type="text" id="prof-bank" placeholder="EasyPaisa / JazzCash / Bank Details" class="w-full border p-2 rounded-xl text-xs">
                 </div>
-
-                <!-- Gmail Accounts List -->
                 <div>
                     <label class="text-[11px] font-bold text-slate-600 block mb-1">Your Old Gmail Accounts:</label>
                     <div id="gmail-fields-container" class="space-y-2"></div>
                     <button onclick="addGmailField('')" class="mt-2 text-[11px] bg-slate-100 border px-3 py-1 rounded-lg font-bold text-blue-600">+ Add Gmail Account</button>
                 </div>
-
                 <button onclick="saveProfile()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-blue-700">Save Profile</button>
                 <button onclick="logout()" class="w-full bg-red-50 text-red-600 border border-red-200 font-bold py-2 rounded-xl text-xs">Sign Out</button>
             </div>
@@ -118,28 +108,16 @@
                 <div id="history-container" class="space-y-2"></div>
             </div>
 
-            <!-- Terms and Conditions Card -->
             <div class="bg-amber-50 border border-amber-200 p-4 rounded-2xl text-[11px] text-amber-900 space-y-1">
                 <h4 class="font-bold text-amber-800">📜 Terms & Conditions:</h4>
                 <ul class="list-disc list-inside space-y-1 text-[10.5px]">
                     <li>You must use established/old Gmail accounts.</li>
                     <li>Tasks must be performed strictly using the assigned Gmail account.</li>
                     <li>Repeated reviews from the same Gmail account will be rejected.</li>
-                    <li>More active Gmail accounts mean more task opportunities.</li>
                 </ul>
-            </div>
-
-            <!-- Community & Contact Links -->
-            <div class="bg-white p-4 rounded-2xl border text-center space-y-2">
-                <p class="text-xs font-bold text-slate-700">Join our official support channels:</p>
-                <div class="flex gap-2 justify-center">
-                    <a href="https://t.me/theolicer" target="_blank" class="bg-sky-500 text-white text-xs font-bold px-4 py-2 rounded-xl">Telegram Group ↗</a>
-                    <a href="https://whatsapp.com/channel/0029VbDTiSx2ER6YxIrq6c0o" target="_blank" class="bg-emerald-600 text-white text-xs font-bold px-4 py-2 rounded-xl">WhatsApp Channel ↗</a>
-                </div>
             </div>
         </div>
 
-        <!-- Footer -->
         <footer class="text-center text-[11px] text-slate-400 py-2">
             © Google Review System. All rights reserved.
         </footer>
@@ -151,16 +129,13 @@
     
     let _supabase = null;
     let currentUser = null;
+    let currentUserBalance = 0;
 
     function initApp(retries = 5) {
         if (window.supabase && typeof window.supabase.createClient === 'function') {
             _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             checkUserSession();
-        } else if (retries > 0) {
-            setTimeout(() => initApp(retries - 1), 300);
-        } else {
-            console.error("Supabase SDK failed to load.");
-        }
+        } else if (retries > 0) setTimeout(() => initApp(retries - 1), 300);
     }
 
     function switchAuthTab(type) {
@@ -189,8 +164,7 @@
         const email = document.getElementById('login-email').value.trim();
         const password = document.getElementById('login-pass').value.trim();
         showAuthMsg("Signing in...", false);
-
-        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+        const { error } = await _supabase.auth.signInWithPassword({ email, password });
         if (error) showAuthMsg(error.message, true);
         else checkUserSession();
     }
@@ -204,7 +178,6 @@
 
         showAuthMsg("Creating account...", false);
         const { data, error } = await _supabase.auth.signUp({ email, password });
-
         if (error) showAuthMsg(error.message, true);
         else if(data.user) {
             await _supabase.from('profiles').upsert([{ id: data.user.id, full_name: name, phone: phone, email: email, balance: 0 }]);
@@ -221,20 +194,20 @@
             document.getElementById('main-dashboard').classList.remove('hidden');
             document.getElementById('user-email-text').innerText = user.email;
 
-            loadUserProfile();
+            await loadUserProfile();
             loadUserTasks();
         } else {
             document.getElementById('auth-block').classList.remove('hidden');
             document.getElementById('main-dashboard').classList.add('hidden');
-            document.getElementById('user-email-text').innerText = 'Not signed in';
         }
     }
 
     async function loadUserProfile() {
         const { data: prof } = await _supabase.from('profiles').select('*').eq('id', currentUser.id).maybeSingle();
         if(prof) {
+            currentUserBalance = prof.balance || 0;
             if(prof.full_name) document.getElementById('user-display-name').innerText = prof.full_name;
-            document.getElementById('user-balance').innerText = `Rs. ${prof.balance || 0}`;
+            document.getElementById('user-balance').innerText = `Rs. ${currentUserBalance}`;
             document.getElementById('prof-country').value = prof.country || '';
             document.getElementById('prof-bank').value = prof.bank_details || '';
 
@@ -259,7 +232,6 @@
     async function saveProfile() {
         const country = document.getElementById('prof-country').value;
         const bank = document.getElementById('prof-bank').value;
-        
         const gmailInputs = document.querySelectorAll('.gmail-input');
         const gmailList = [];
         gmailInputs.forEach(i => { if(i.value.trim()) gmailList.push(i.value.trim()); });
@@ -278,14 +250,46 @@
         const { data: tasks } = await _supabase.from('tasks')
             .select('*')
             .eq('assigned_user_id', currentUser.id)
-            .eq('status', 'pending')
+            .neq('status', 'completed')
             .order('id', { ascending: false });
+
+        const { data: subs } = await _supabase.from('submissions')
+            .select('task_id, status')
+            .eq('user_id', currentUser.id);
+
+        const subMap = {};
+        if(subs) subs.forEach(s => subMap[s.task_id] = s.status);
 
         const container = document.getElementById('tasks-list');
         container.innerHTML = '';
 
         if(tasks && tasks.length > 0) {
             tasks.forEach(t => {
+                const isSubmitted = subMap[t.id];
+                
+                let proofContent = '';
+                if(isSubmitted === 'pending') {
+                    proofContent = `
+                        <div class="bg-amber-50 border border-amber-300 text-amber-800 p-3 rounded-xl text-center text-xs font-bold space-y-1">
+                            <span>⏳ پينڊنگ ريويو (Pending Review)</span>
+                            <p class="text-[10px] font-normal text-amber-700">توھان جو ٽاسڪ سبمٽ ٿي ويو آھي، ايڊمن جي فيصلي جو انتظار ڪريو.</p>
+                        </div>`;
+                } else if(isSubmitted === 'rejected') {
+                    proofContent = `
+                        <div class="bg-red-50 border border-red-300 text-red-700 p-2.5 rounded-xl text-center text-xs font-bold">
+                            ❌ ٽاسڪ رجيڪٽ ٿي ويو.
+                        </div>`;
+                } else {
+                    proofContent = `
+                        <div class="border-t pt-2 space-y-1">
+                            <label class="text-[10px] text-slate-500 font-bold block">3. Paste Full Review Share Text / Proof Link:</label>
+                            <div class="space-y-2">
+                                <textarea id="proof-link-${t.id}" rows="2" placeholder="Paste full share message or link here..." class="w-full border p-2 rounded-xl text-xs outline-none focus:border-blue-600"></textarea>
+                                <button onclick="submitTaskProof(${t.id})" class="w-full bg-emerald-600 text-white text-xs py-2 rounded-xl font-bold hover:bg-emerald-700">Submit Proof</button>
+                            </div>
+                        </div>`;
+                }
+
                 container.innerHTML += `
                     <div class="bg-white p-4 rounded-2xl border space-y-3">
                         <div class="flex justify-between items-center border-b pb-2">
@@ -307,13 +311,7 @@
                             <label class="text-[10px] text-slate-500 font-bold block mb-1">2. Open Location Link:</label>
                             <a href="${t.google_maps_link}" target="_blank" class="block text-center bg-blue-600 text-white text-xs py-2 rounded-xl font-bold">Google Maps ↗</a>
                         </div>
-                        <div class="border-t pt-2 space-y-1">
-                            <label class="text-[10px] text-slate-500 font-bold block">3. Paste Full Review Share Text / Proof Link:</label>
-                            <div class="space-y-2">
-                                <textarea id="proof-link-${t.id}" rows="2" placeholder="Paste full share message or link here..." class="w-full border p-2 rounded-xl text-xs outline-none focus:border-blue-600"></textarea>
-                                <button onclick="submitTaskProof(${t.id})" class="w-full bg-emerald-600 text-white text-xs py-2 rounded-xl font-bold hover:bg-emerald-700">Submit Proof</button>
-                            </div>
-                        </div>
+                        ${proofContent}
                     </div>
                 `;
             });
@@ -334,7 +332,7 @@
         if(!rawText) return alert("Please paste the review share text or link!");
 
         const { error } = await _supabase.from('submissions').insert([
-            { task_id: taskId, user_id: currentUser.id, proof_link: rawText }
+            { task_id: taskId, user_id: currentUser.id, proof_link: rawText, status: 'pending' }
         ]);
 
         if(!error) {
@@ -345,9 +343,10 @@
 
     async function requestWithdrawal() {
         const amt = parseFloat(document.getElementById('withdraw-amount').value);
-        const bank = document.getElementById('withdraw-bank').value;
+        const bank = document.getElementById('withdraw-bank').value.trim();
 
         if(!amt || amt < 120) return alert("Minimum withdrawal amount is Rs. 120!");
+        if(amt > currentUserBalance) return alert(`توھان وٽ ڪافي بيلنس ناھي! توھان جو بيلنس Rs. ${currentUserBalance} آھي.`);
         if(!bank) return alert("Please enter payment/bank account details!");
 
         const { error } = await _supabase.from('withdrawals').insert([
@@ -357,6 +356,7 @@
         if(!error) {
             alert("Withdrawal request submitted successfully!");
             document.getElementById('withdraw-amount').value = '';
+            document.getElementById('withdraw-bank').value = '';
         } else alert(error.message);
     }
 
@@ -380,7 +380,7 @@
             subs.forEach(s => {
                 html += `<div class="bg-white p-2.5 rounded-xl border text-xs flex justify-between">
                     <span>Task #${s.task_id}</span>
-                    <span class="font-bold ${s.status === 'approved' ? 'text-emerald-600' : 'text-amber-600'}">${s.status}</span>
+                    <span class="font-bold ${s.status === 'approved' ? 'text-emerald-600' : s.status === 'rejected' ? 'text-red-600' : 'text-amber-600'}">${s.status}</span>
                 </div>`;
             });
         } else html += '<p class="text-[11px] text-slate-400">No submission history found.</p>';
@@ -390,7 +390,7 @@
             wds.forEach(w => {
                 html += `<div class="bg-white p-2.5 rounded-xl border text-xs flex justify-between">
                     <span>Rs. ${w.amount} PKR</span>
-                    <span class="font-bold ${w.status === 'approved' ? 'text-emerald-600' : 'text-amber-600'}">${s.status}</span>
+                    <span class="font-bold ${w.status === 'approved' ? 'text-emerald-600' : 'text-amber-600'}">${w.status}</span>
                 </div>`;
             });
         } else html += '<p class="text-[11px] text-slate-400">No withdrawal history found.</p>';
