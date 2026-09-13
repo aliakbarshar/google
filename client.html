@@ -14,6 +14,14 @@
     <!-- Auth Modal for Client Login / Registration -->
     <div id="client-auth-modal" class="fixed inset-0 bg-slate-950/90 flex items-center justify-center p-4 z-50">
         <div class="bg-slate-800 border border-slate-700 p-6 rounded-2xl w-full max-w-md space-y-4">
+            
+            <!-- Promotional Notice in Bold English -->
+            <div class="bg-emerald-950/60 border border-emerald-700/50 p-3 rounded-xl text-center">
+                <p class="text-xs font-bold text-emerald-300 leading-relaxed">
+                    🌟 Get high-quality Google Maps reviews and positive ratings for your business at the most affordable rates! Complete Google Maps growth and promotion services available here.
+                </p>
+            </div>
+
             <h2 class="text-xl font-bold text-emerald-400 text-center">⭐ Client Portal Access</h2>
             <p class="text-xs text-slate-400 text-center">Login or Register to order custom Google Maps reviews for your business.</p>
             
@@ -35,12 +43,19 @@
     <div class="max-w-4xl mx-auto space-y-6">
         
         <!-- Header -->
-        <header class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex justify-between items-center">
+        <header class="bg-slate-800 p-4 rounded-2xl border border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
                 <h1 class="font-bold text-emerald-400 text-lg">🚀 Client Campaign Center</h1>
                 <p id="client-info" class="text-xs text-slate-400">Loading profile...</p>
             </div>
-            <button onclick="clientLogout()" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-700/50 px-3 py-1.5 rounded-lg text-xs font-bold">Logout 🔒</button>
+
+            <!-- Profile WhatsApp / Phone Update Section -->
+            <div class="flex items-center gap-2 bg-slate-900 p-2 rounded-xl border border-slate-700 w-full sm:w-auto">
+                <input type="text" id="update-phone-input" placeholder="Update WhatsApp Number" class="bg-transparent border-none text-xs text-white outline-none px-2 w-40">
+                <button onclick="updateClientPhone()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">Update Phone</button>
+            </div>
+
+            <button onclick="clientLogout()" class="bg-red-600/20 hover:bg-red-600/40 text-red-400 border border-red-700/50 px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap">Logout 🔒</button>
         </header>
 
         <!-- Stats Overview Cards -->
@@ -176,10 +191,36 @@
         if (user) {
             currentUser = user;
             document.getElementById('client-auth-modal').classList.add('hidden');
-            document.getElementById('client-info').innerText = `Logged in as: ${user.email}`;
+            
+            // Get user phone from metadata if available
+            const userPhone = user.user_metadata?.phone || '';
+            document.getElementById('client-info').innerHTML = `Logged in as: <strong class="text-white">${user.email}</strong> | Phone: <strong class="text-emerald-400">${userPhone || 'Not set'}</strong>`;
+            
+            if (userPhone) {
+                document.getElementById('update-phone-input').value = userPhone;
+            }
+
             loadClientDashboard();
         } else {
             document.getElementById('client-auth-modal').classList.remove('hidden');
+        }
+    }
+
+    async function updateClientPhone() {
+        const newPhone = document.getElementById('update-phone-input').value.trim();
+        if (!newPhone) {
+            return alert("Please enter a valid WhatsApp / Phone number!");
+        }
+
+        const { data, error } = await _supabase.auth.updateUser({
+            data: { phone: newPhone }
+        });
+
+        if (error) {
+            alert("Error updating phone number: " + error.message);
+        } else {
+            alert("WhatsApp / Phone number updated successfully!");
+            checkClientSession();
         }
     }
 
