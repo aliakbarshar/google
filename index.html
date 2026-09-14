@@ -302,8 +302,10 @@
         const container = document.getElementById('user-tasks-list');
         container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Loading tasks...</p>';
 
+        // هتي تبديلي ڪئي وئي آهي ته صرف ان لاگ ان يوزر جا ٽاسڪ لوڊ ٿين
         const { data: tasks, error } = await _supabase.from('tasks')
             .select('*')
+            .eq('assigned_user_id', currentUser.id) // صرف لاگ ان يوزر جو ٽاسڪ
             .eq('status', 'active')
             .order('id', { ascending: false });
 
@@ -360,7 +362,7 @@
                 container.innerHTML = html;
             }
         } else {
-            container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No active tasks available right now.</p>';
+            container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No active tasks assigned to you right now.</p>';
         }
     }
 
@@ -438,7 +440,6 @@
             return alert("You don't have enough balance! Your available balance is Rs. " + bal);
         }
 
-        // 1. Insert withdrawal request
         const { error } = await _supabase.from('withdrawals').insert([{
             user_id: currentUser.id,
             method: method,
@@ -449,7 +450,6 @@
 
         if(error) return alert("Error: " + error.message);
 
-        // 2. Deduct amount from user's balance
         const newBalance = bal - amount;
         const { error: updateError } = await _supabase.from('profiles')
             .update({ balance: newBalance })
