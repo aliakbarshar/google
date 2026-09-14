@@ -150,7 +150,17 @@
         if (window.supabase && typeof window.supabase.createClient === 'function') {
             _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
             checkAdminSession();
-        } else if (retries > 0) setTimeout(() => initAdmin(retries - 1), 300);
+        } else if (retries > 0) {
+            setTimeout(() => initAdmin(retries - 1), 300);
+        } else {
+            // Fallback if supabase CDN is slow to attach to window
+            try {
+                _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                checkAdminSession();
+            } catch(e) {
+                console.error("Supabase load error", e);
+            }
+        }
     }
 
     async function handleAdminLogin() {
@@ -162,6 +172,7 @@
     }
 
     async function checkAdminSession() {
+        if(!_supabase) return;
         const { data: { user } } = await _supabase.auth.getUser();
         if(user) {
             document.getElementById('admin-auth-block').classList.add('hidden');
@@ -171,7 +182,7 @@
             loadWithdrawals();
             loadUsersDropdown();
         } else {
-            document.getElementById('admin-auth-block').classList.add('hidden');
+            document.getElementById('admin-auth-block').classList.remove('hidden');
             document.getElementById('admin-main').classList.add('hidden');
         }
     }
