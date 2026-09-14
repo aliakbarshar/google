@@ -86,18 +86,7 @@
                     <button onclick="createNewTask()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-blue-700">Publish Task</button>
                 </div>
 
-                <!-- Active Tasks List & Management -->
-                <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
-                    <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
-                        <span>Active Tasks Management</span>
-                        <button onclick="loadAdminTasksList()" class="text-[10px] text-blue-600 underline">Refresh Tasks</button>
-                    </h3>
-                    <div id="admin-tasks-list" class="space-y-3">
-                        <p class="text-xs text-slate-400 text-center py-2">Loading tasks...</p>
-                    </div>
-                </div>
-
-                <!-- Submissions Review -->
+                <!-- Submissions Review (Pending) -->
                 <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
                     <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
                         <span>User Submissions (Pending Proofs)</span>
@@ -105,6 +94,28 @@
                     </h3>
                     <div id="admin-submissions-list" class="space-y-3">
                         <p class="text-xs text-slate-400 text-center py-4">Loading submissions...</p>
+                    </div>
+                </div>
+
+                <!-- Approved Submissions Management -->
+                <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
+                    <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
+                        <span>Approved Submissions (Manage & Delete)</span>
+                        <button onclick="loadApprovedSubmissions()" class="text-[10px] text-blue-600 underline">Refresh</button>
+                    </h3>
+                    <div id="admin-approved-list" class="space-y-3">
+                        <p class="text-xs text-slate-400 text-center py-4">Loading approved submissions...</p>
+                    </div>
+                </div>
+
+                <!-- Active Tasks Management -->
+                <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
+                    <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
+                        <span>Active Tasks Management</span>
+                        <button onclick="loadAdminTasksList()" class="text-[10px] text-blue-600 underline">Refresh Tasks</button>
+                    </h3>
+                    <div id="admin-tasks-list" class="space-y-3">
+                        <p class="text-xs text-slate-400 text-center py-2">Loading tasks...</p>
                     </div>
                 </div>
             </div>
@@ -189,6 +200,7 @@
             document.getElementById('admin-main').classList.remove('hidden');
             document.getElementById('admin-email').innerText = user.email;
             loadAdminData();
+            loadApprovedSubmissions();
             loadAdminTasksList();
             loadWithdrawals();
             loadUsersDropdown();
@@ -206,7 +218,7 @@
         document.getElementById(`asec-${tab}`).classList.remove('hidden');
         document.getElementById(`atab-${tab}`).className = "py-2 rounded-xl bg-slate-900 text-white font-bold";
 
-        if(tab === 'tasks') { loadAdminData(); loadAdminTasksList(); }
+        if(tab === 'tasks') { loadAdminData(); loadApprovedSubmissions(); loadAdminTasksList(); }
         if(tab === 'withdrawals') loadWithdrawals();
         if(tab === 'users') loadAllUsers();
         if(tab === 'clients') loadClientOrders();
@@ -348,9 +360,9 @@
                             <p class="text-[11px] text-slate-600"><strong>Comment:</strong> ${taskComment}</p>
                             <a href="${taskMap}" target="_blank" class="text-blue-500 underline block text-[11px]">Open Maps Link ↗</a>
                         </div>
-                        <div class="bg-emerald-50 p-2 rounded border border-emerald-200">
-                            <strong class="text-emerald-800 text-[10px] block">User Proof Link:</strong>
-                            <p class="font-mono text-emerald-900 select-all">${s.proof_link || 'No proof link'}</p>
+                        <div class="bg-blue-50 p-2 rounded border border-blue-200 space-y-1">
+                            <strong class="text-blue-800 text-[10px] block">User Submitted Details / Review Info:</strong>
+                            <p class="font-mono text-blue-900 select-all bg-white p-1.5 rounded border">${s.proof_link || 'No details provided'}</p>
                         </div>
                         <div class="flex gap-2 pt-1">
                             <button id="btn-approve-${s.id}" onclick="approveSubmission(${s.id}, '${s.user_id}', ${s.tasks?.reward || 20})" class="w-1/2 bg-emerald-600 text-white py-1.5 rounded-lg font-bold hover:bg-emerald-700">Approve & Pay</button>
@@ -361,6 +373,75 @@
             });
             container.innerHTML = html;
         } else container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No pending submissions.</p>';
+    }
+
+    async function loadApprovedSubmissions() {
+        const container = document.getElementById('admin-approved-list');
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Loading approved submissions...</p>';
+
+        const { data: subs, error } = await _supabase.from('submissions')
+            .select('*, tasks(*), profiles:user_id(full_name, phone)')
+            .eq('status', 'approved')
+            .order('id', { ascending: false });
+
+        if(error) return container.innerHTML = `<p class="text-xs text-red-500">Error: ${error.message}</p>`;
+
+        if(subs && subs.length > 0) {
+            let html = '';
+            subs.forEach(s => {
+                const userName = s.profiles?.full_name || 'User';
+                const userPhone = s.profiles?.phone || 'No Phone';
+                const rewardAmount = s.tasks?.reward || 20;
+
+                html += `
+                    <div class="bg-slate-50 p-3 rounded-xl border space-y-2 text-xs">
+                        <div class="flex justify-between items-center font-bold text-slate-700">
+                            <span>👤 ${userName} (${userPhone})</span>
+                            <span class="text-emerald-600">Rs. ${rewardAmount} Paid</span>
+                        </div>
+                        <div class="bg-white p-2 rounded border space-y-1">
+                            <p class="text-[11px] text-slate-600"><strong>Submitted Details:</strong> ${s.proof_link || 'N/A'}</p>
+                        </div>
+                        <div class="flex justify-between items-center pt-1">
+                            <span class="text-[10px] text-slate-400">Task ID: #${s.task_id}</span>
+                            <button onclick="deleteApprovedSubmission(${s.id}, '${s.user_id}', ${rewardAmount})" class="bg-red-600 text-white px-3 py-1 rounded-lg text-[10px] font-bold hover:bg-red-700">Delete & Deduct Balance</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No approved submissions found.</p>';
+    }
+
+    async function deleteApprovedSubmission(subId, userId, rewardAmount) {
+        if(!confirm(`Are you sure you want to delete this approved submission? This will deduct Rs. ${rewardAmount} from the user's balance.`)) return;
+
+        // Fetch current user balance
+        const { data: prof, error: profErr } = await _supabase.from('profiles').select('balance').eq('id', userId).single();
+        if (profErr || !prof) {
+            alert("Error fetching user profile balance.");
+            return;
+        }
+
+        const currentBal = prof.balance || 0;
+        const newBal = Math.max(0, currentBal - rewardAmount);
+
+        // Update user balance
+        const { error: balErr } = await _supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
+        if (balErr) {
+            alert("Error updating user balance: " + balErr.message);
+            return;
+        }
+
+        // Delete submission
+        const { error: delErr } = await _supabase.from('submissions').delete().eq('id', subId);
+        if (delErr) {
+            alert("Balance deducted, but error deleting submission: " + delErr.message);
+        } else {
+            alert("Approved submission deleted and balance successfully deducted!");
+            loadApprovedSubmissions();
+            loadAdminData();
+        }
     }
 
     async function loadWithdrawals() {
@@ -519,6 +600,7 @@
         } else {
             alert("Approved and reward added to user balance successfully!");
             loadAdminData();
+            loadApprovedSubmissions();
         }
     }
 
@@ -532,7 +614,7 @@
         btnReject.innerText = "Processing...";
 
         const { data: currentSub } = await _supabase.from('submissions').select('status').eq('id', subId).single();
-        if (!currentSub || currentSub.status !== 'pending') {
+        if (!currentSub || !currentSub || currentSub.status !== 'pending') {
             alert("This submission has already been processed.");
             loadAdminData();
             return;
