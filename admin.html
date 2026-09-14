@@ -50,7 +50,7 @@
                     
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="text-[10px] text-slate-500 font-bold block mb-1">Select User:</label>
+                            <label class="text-[10px] text-slate-500 font-bold block mb-1">Select User (Optional):</label>
                             <select id="task-user-select" onchange="onUserSelectedForTask()" class="w-full border p-2 rounded-xl text-xs outline-none bg-slate-50">
                                 <option value="">-- All Users (General Task) --</option>
                             </select>
@@ -84,6 +84,17 @@
                     </div>
 
                     <button onclick="createNewTask()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-blue-700">Publish Task</button>
+                </div>
+
+                <!-- Active Tasks List & Management -->
+                <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
+                    <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
+                        <span>Active Tasks Management</span>
+                        <button onclick="loadAdminTasksList()" class="text-[10px] text-blue-600 underline">Refresh Tasks</button>
+                    </h3>
+                    <div id="admin-tasks-list" class="space-y-3">
+                        <p class="text-xs text-slate-400 text-center py-2">Loading tasks...</p>
+                    </div>
                 </div>
 
                 <!-- Submissions Review -->
@@ -178,6 +189,7 @@
             document.getElementById('admin-main').classList.remove('hidden');
             document.getElementById('admin-email').innerText = user.email;
             loadAdminData();
+            loadAdminTasksList();
             loadWithdrawals();
             loadUsersDropdown();
         } else {
@@ -194,6 +206,7 @@
         document.getElementById(`asec-${tab}`).classList.remove('hidden');
         document.getElementById(`atab-${tab}`).className = "py-2 rounded-xl bg-slate-900 text-white font-bold";
 
+        if(tab === 'tasks') { loadAdminData(); loadAdminTasksList(); }
         if(tab === 'withdrawals') loadWithdrawals();
         if(tab === 'users') loadAllUsers();
         if(tab === 'clients') loadClientOrders();
@@ -258,7 +271,52 @@
             document.getElementById('new-task-msg').value = '';
             document.getElementById('task-target-gmail').innerHTML = '<option value="">-- Select user first --</option>';
             document.getElementById('task-user-select').value = '';
+            loadAdminTasksList();
         } else alert("Error: " + error.message);
+    }
+
+    async function loadAdminTasksList() {
+        const container = document.getElementById('admin-tasks-list');
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">Loading tasks...</p>';
+
+        const { data: tasks, error } = await _supabase.from('tasks').select('*').order('id', { ascending: false });
+        if(error) return container.innerHTML = `<p class="text-xs text-red-500">Error: ${error.message}</p>`;
+
+        if(tasks && tasks.length > 0) {
+            let html = '';
+            tasks.forEach(t => {
+                const assignedText = t.assigned_user_id ? `<span class="text-amber-600 font-bold">Specific User Task</span>` : `<span class="text-blue-600 font-bold">General Task</span>`;
+                html += `
+                    <div class="bg-slate-50 p-3 rounded-xl border space-y-1.5 text-xs">
+                        <div class="flex justify-between items-center font-bold text-slate-700">
+                            <span>Task ID: #${t.id} (${assignedText})</span>
+                            <span class="text-emerald-600">Reward: Rs. ${t.reward}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-600 truncate"><strong>Comment:</strong> ${t.review_text}</p>
+                        <div class="flex justify-between items-center pt-1">
+                            <a href="${t.google_maps_link}" target="_blank" class="text-blue-500 underline text-[11px]">Open Maps Link ↗</a>
+                            <button onclick="deleteTask(${t.id})" class="bg-red-600 text-white px-3 py-1 rounded-lg text-[10px] font-bold hover:bg-red-700">Delete Task</button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else {
+            container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">No active tasks found.</p>';
+        }
+    }
+
+    async function deleteTask(taskId) {
+        if(!confirm(`Are you sure you want to delete Task #${taskId}?`)) return;
+
+        const { error } = await _supabase.from('tasks').delete().eq('id', taskId);
+        if(!error) {
+            alert("Task deleted successfully!");
+            loadAdminTasksList();
+            loadAdminData();
+        } else {
+            alert("Error deleting task: " + error.message);
+        }
     }
 
     async function loadAdminData() {
@@ -431,14 +489,12 @@
         const btnApprove = document.getElementById(`btn-approve-${subId}`);
         const btnReject = document.getElementById(`btn-reject-${subId}`);
 
-        // Prevent double clicking immediately
         if (btnApprove.disabled) return;
         btnApprove.disabled = true;
         btnReject.disabled = true;
         btnApprove.innerText = "Processing...";
         btnApprove.className = "w-1/2 bg-slate-400 text-white py-1.5 rounded-lg font-bold cursor-not-allowed";
 
-        // Check current status in DB first to make sure it's still pending
         const { data: currentSub, error: fetchErr } = await _supabase.from('submissions').select('status').eq('id', subId).single();
         if (fetchErr || !currentSub || currentSub.status !== 'pending') {
             alert("This submission has already been processed or is no longer pending.");
@@ -446,7 +502,6 @@
             return;
         }
 
-        // Update submission status to approved
         const { error: subErr } = await _supabase.from('submissions').update({ status: 'approved' }).eq('id', subId);
         if(subErr) {
             alert("Error: " + subErr.message);
@@ -454,12 +509,10 @@
             return;
         }
 
-        // Fetch user profile current balance
         const { data: prof } = await _supabase.from('profiles').select('balance').eq('id', userId).single();
         const currentBal = prof ? (prof.balance || 0) : 0;
         const newBal = currentBal + rewardAmount;
 
-        // Update user balance
         const { error: balErr } = await _supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
         if(balErr) {
             alert("Approved, but balance update failed: " + balErr.message);
