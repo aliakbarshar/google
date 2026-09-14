@@ -290,7 +290,6 @@
         else alert("Error: " + error.message);
     }
 
-    // Helper functions for copying text safely
     window.copyText = function(text, label) {
         navigator.clipboard.writeText(text).then(() => {
             alert(label + ' copied successfully!');
@@ -325,7 +324,6 @@
 
                 activeCount++;
                 
-                // Escape quotes safely for HTML attributes
                 const safeReviewText = (t.review_text || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
                 const safeAdminMsg = (t.admin_message || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
@@ -440,39 +438,7 @@
             return alert("You don't have enough balance! Your available balance is Rs. " + bal);
         }
 
-        const { error } = __supabase.from('withdrawals').insert([{
-            user_id: currentUser.id,
-            method: method,
-            account_number: account,
-            amount: amount,
-            status: 'pending'
-        }]);
-
-        // Note: Fix typo in _supabase variable reference for withdrawals just in case
-        // (Using standard _supabase below)
-    }
-
-    // Corrected withdrawal function
-    async function submitWithdrawal() {
-        const method = document.getElementById('w-method').value;
-        const account = document.getElementById('w-account').value.trim();
-        const amount = parseFloat(document.getElementById('w-amount').value);
-
-        if(!account || !amount || isNaN(amount)) {
-            return alert("Please enter valid account details and amount!");
-        }
-
-        if(amount < 200) {
-            return alert("Minimum withdrawal amount is Rs. 200!");
-        }
-
-        const { data: prof } = await _supabase.from('profiles').select('balance').eq('id', currentUser.id).single();
-        const bal = prof ? (prof.balance || 0) : 0;
-
-        if(amount > bal) {
-            return alert("You don't have enough balance! Your available balance is Rs. " + bal);
-        }
-
+        // 1. Insert withdrawal request
         const { error } = await _supabase.from('withdrawals').insert([{
             user_id: currentUser.id,
             method: method,
@@ -481,13 +447,24 @@
             status: 'pending'
         }]);
 
-        if(!error) {
+        if(error) return alert("Error: " + error.message);
+
+        // 2. Deduct amount from user's balance
+        const newBalance = bal - amount;
+        const { error: updateError } = await _supabase.from('profiles')
+            .update({ balance: newBalance })
+            .eq('id', currentUser.id);
+
+        if(updateError) {
+            alert("Withdrawal requested, but error updating balance: " + updateError.message);
+        } else {
             alert("Withdrawal request submitted successfully!");
-            document.getElementById('w-account').value = '';
-            document.getElementById('w-amount').value = '';
-            loadUserWithdrawals();
-            loadUserData();
-        } else alert("Error: " + error.message);
+        }
+
+        document.getElementById('w-account').value = '';
+        document.getElementById('w-amount').value = '';
+        loadUserWithdrawals();
+        loadUserData();
     }
 
     async function loadUserWithdrawals() {
