@@ -326,9 +326,17 @@
                             <span class="text-emerald-600 font-black">Reward: Rs. ${t.reward || 20}</span>
                         </div>
                         <div class="bg-white p-2 rounded border space-y-1">
-                            <p class="text-[11px] text-slate-600"><strong>Review Text:</strong> ${t.review_text || 'N/A'}</p>
-                            ${t.admin_message ? `<p class="text-[11px] text-blue-600"><strong>Note:</strong> ${t.admin_message}</p>` : ''}
-                            <a href="${t.google_maps_link}" target="_blank" class="text-blue-500 underline block text-[11px] font-bold">Open Google Maps Link ↗</a>
+                            <div class="flex justify-between items-start gap-2">
+                                <p class="text-[11px] text-slate-600 flex-1" id="review-text-${t.id}"><strong>Review Text:</strong> ${t.review_text || 'N/A'}</p>
+                                ${t.review_text ? `<button onclick="navigator.clipboard.writeText(${JSON.stringify(t.review_text)}).then(() => alert('Review text copied!'))" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-2 py-1 rounded text-[10px] font-bold whitespace-nowrap">Copy</button>` : ''}
+                            </div>
+                            ${t.admin_message ? `
+                                <div class="flex justify-between items-start gap-2 pt-1 border-t">
+                                    <p class="text-[11px] text-blue-600 flex-1"><strong>Note:</strong> ${t.admin_message}</p>
+                                    <button onclick="navigator.clipboard.writeText(${JSON.stringify(t.admin_message)}).then(() => alert('Note copied!'))" class="bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-1 rounded text-[10px] font-bold whitespace-nowrap">Copy</button>
+                                </div>
+                            ` : ''}
+                            <a href="${t.google_maps_link}" target="_blank" rel="noopener noreferrer" class="text-blue-500 underline block text-[11px] font-bold pt-1">Open Google Maps Link ↗</a>
                         </div>
                         ${actionHtml}
                     </div>
@@ -403,7 +411,6 @@
             return alert("Please enter valid account details and amount!");
         }
 
-        // گھٽ ۾ گھٽ حد 200 روپيا چيڪ ڪرڻ
         if(amount < 200) {
             return alert("Minimum withdrawal amount is Rs. 200!");
         }
@@ -411,7 +418,6 @@
         const { data: prof } = await _supabase.from('profiles').select('balance').eq('id', currentUser.id).single();
         const bal = prof ? (prof.balance || 0) : 0;
 
-        // يوزر وٽ موجود بيلنس کان وڌيڪ رقم ڪڍڻ جي چيڪنگ
         if(amount > bal) {
             return alert("You don't have enough balance! Your available balance is Rs. " + bal);
         }
