@@ -153,7 +153,6 @@
         } else if (retries > 0) {
             setTimeout(() => initAdmin(retries - 1), 300);
         } else {
-            // Fallback if supabase CDN is slow to attach to window
             try {
                 _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
                 checkAdminSession();
@@ -243,7 +242,7 @@
         if(!mapsLink || !reviewText) return alert("Please fill Maps Link and Review Comment!");
 
         const { error } = await _supabase.from('tasks').insert([{
-            assigned_user_id: selectedUserId,
+            assigned_user_id: selectedUserId || null,
             google_maps_link: mapsLink,
             review_text: reviewText,
             admin_message: adminMsg,
@@ -282,7 +281,7 @@
                 const taskMap = s.tasks?.google_maps_link || '#';
 
                 html += `
-                    <div class="bg-slate-50 p-3 rounded-xl border space-y-2 text-xs">
+                    <div class="bg-slate-50 p-3 rounded-xl border space-y-2 text-xs" id="sub-card-${s.id}">
                         <div class="flex justify-between items-center font-bold text-slate-700">
                             <span>👤 ${userName} (${userPhone})</span>
                             <span class="text-blue-600">Task #${s.task_id}</span>
@@ -296,8 +295,8 @@
                             <p class="font-mono text-emerald-900 select-all">${s.proof_link || 'No proof link'}</p>
                         </div>
                         <div class="flex gap-2 pt-1">
-                            <button onclick="approveSubmission(${s.id}, '${s.user_id}', ${s.tasks?.reward || 20})" class="w-1/2 bg-emerald-600 text-white py-1.5 rounded-lg font-bold">Approve & Pay</button>
-                            <button onclick="rejectSubmission(${s.id})" class="w-1/2 bg-red-600 text-white py-1.5 rounded-lg font-bold">Reject</button>
+                            <button id="btn-approve-${s.id}" onclick="approveSubmission(${s.id}, '${s.user_id}', ${s.tasks?.reward || 20})" class="w-1/2 bg-emerald-600 text-white py-1.5 rounded-lg font-bold hover:bg-emerald-700">Approve & Pay</button>
+                            <button id="btn-reject-${s.id}" onclick="rejectSubmission(${s.id})" class="w-1/2 bg-red-600 text-white py-1.5 rounded-lg font-bold hover:bg-red-700">Reject</button>
                         </div>
                     </div>
                 `;
@@ -429,27 +428,71 @@
     }
 
     async function approveSubmission(subId, userId, rewardAmount) {
-        const { error: subErr } = await _supabase.from('submissions').update({ status: 'approved' }).eq('id', subId);
-        if(subErr) return alert("Error: " + subErr.message);
+        const btnApprove = document.getElementById(`btn-approve-${subId}`);
+        const btnReject = document.getElementById(`btn-reject-${subId}`);
 
+        // Prevent double clicking immediately
+        if (btnApprove.disabled) return;
+        btnApprove.disabled = true;
+        btnReject.disabled = true;
+        btnApprove.innerText = "Processing...";
+        btnApprove.className = "w-1/2 bg-slate-400 text-white py-1.5 rounded-lg font-bold cursor-not-allowed";
+
+        // Check current status in DB first to make sure it's still pending
+        const { data: currentSub, error: fetchErr } = await _supabase.from('submissions').select('status').eq('id', subId).single();
+        if (fetchErr || !currentSub || currentSub.status !== 'pending') {
+            alert("This submission has already been processed or is no longer pending.");
+            loadAdminData();
+            return;
+        }
+
+        // Update submission status to approved
+        const { error: subErr } = await _supabase.from('submissions').update({ status: 'approved' }).eq('id', subId);
+        if(subErr) {
+            alert("Error: " + subErr.message);
+            loadAdminData();
+            return;
+        }
+
+        // Fetch user profile current balance
         const { data: prof } = await _supabase.from('profiles').select('balance').eq('id', userId).single();
         const currentBal = prof ? (prof.balance || 0) : 0;
         const newBal = currentBal + rewardAmount;
 
+        // Update user balance
         const { error: balErr } = await _supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
-        if(balErr) alert("Approved, but balance update failed: " + balErr.message);
-        else {
-            alert("Approved and reward added to user balance!");
+        if(balErr) {
+            alert("Approved, but balance update failed: " + balErr.message);
+        } else {
+            alert("Approved and reward added to user balance successfully!");
             loadAdminData();
         }
     }
 
     async function rejectSubmission(subId) {
+        const btnApprove = document.getElementById(`btn-approve-${subId}`);
+        const btnReject = document.getElementById(`btn-reject-${subId}`);
+
+        if (btnReject.disabled) return;
+        btnApprove.disabled = true;
+        btnReject.disabled = true;
+        btnReject.innerText = "Processing...";
+
+        const { data: currentSub } = await _supabase.from('submissions').select('status').eq('id', subId).single();
+        if (!currentSub || currentSub.status !== 'pending') {
+            alert("This submission has already been processed.");
+            loadAdminData();
+            return;
+        }
+
         const { error } = await _supabase.from('submissions').update({ status: 'rejected' }).eq('id', subId);
         if(!error) {
             alert("Submission rejected.");
             loadAdminData();
-        } else alert("Error: " + error.message);
+        } else {
+            alert("Error: " + error.message);
+            loadAdminData();
+        }
     }
 
     async function logoutAdmin() {
