@@ -46,13 +46,13 @@
             <div id="asec-tasks" class="space-y-4">
                 <!-- Create Task -->
                 <div class="bg-white p-4 rounded-2xl border shadow space-y-3">
-                    <h3 class="font-bold text-xs text-slate-700">Create New Review Task</h3>
+                    <h3 class="font-bold text-xs text-slate-700">Create New Review Task (Assigned to Specific User)</h3>
                     
                     <div class="grid grid-cols-2 gap-2">
                         <div>
-                            <label class="text-[10px] text-slate-500 font-bold block mb-1">Select User (Optional):</label>
-                            <select id="task-user-select" onchange="onUserSelectedForTask()" class="w-full border p-2 rounded-xl text-xs outline-none bg-slate-50">
-                                <option value="">-- All Users (General Task) --</option>
+                            <label class="text-[10px] text-slate-500 font-bold block mb-1">Select User (Required):</label>
+                            <select id="task-user-select" onchange="onUserSelectedForTask()" class="w-full border p-2 rounded-xl text-xs outline-none bg-slate-50" required>
+                                <option value="">-- Select Specific User --</option>
                             </select>
                         </div>
                         <div>
@@ -83,7 +83,7 @@
                         <input type="number" id="new-task-reward" value="20" class="w-full border p-2 rounded-xl text-xs outline-none">
                     </div>
 
-                    <button onclick="createNewTask()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-blue-700">Publish Task</button>
+                    <button onclick="createNewTask()" class="w-full bg-blue-600 text-white font-bold py-2.5 rounded-xl text-xs hover:bg-blue-700">Publish Task to Selected User</button>
                 </div>
 
                 <!-- Submissions Review (Pending) -->
@@ -228,10 +228,10 @@
         const { data: users } = await _supabase.from('profiles').select('*');
         allUsersCache = users || [];
         const select = document.getElementById('task-user-select');
-        select.innerHTML = '<option value="">-- All Users (General Task) --</option>';
+        select.innerHTML = '<option value="">-- Select Specific User (Required) --</option>';
         if(users) {
             users.forEach(u => {
-                select.innerHTML += `<option value="${u.id}">${u.full_name || u.email}</option>`;
+                select.innerHTML += `<option value="${u.id}">${u.full_name || u.email} (${u.phone || 'No Phone'})</option>`;
             });
         }
     }
@@ -241,10 +241,7 @@
         const gmailSelect = document.getElementById('task-target-gmail');
         gmailSelect.innerHTML = '<option value="">-- Select Target Gmail --</option>';
 
-        if(!selectedUserId) {
-            gmailSelect.innerHTML = '<option value="">All or any registered Gmail</option>';
-            return;
-        }
+        if(!selectedUserId) return;
 
         const userObj = allUsersCache.find(u => u.id === selectedUserId);
         if(userObj && userObj.gmail_accounts && userObj.gmail_accounts.length > 0) {
@@ -257,32 +254,39 @@
     }
 
     async function createNewTask() {
-        const selectedUserId = document.getElementById('task-user-select').value || null;
+        const selectedUserId = document.getElementById('task-user-select').value;
+        
+        // هيڪس لاجڪ: هاڻي يوزر جو سليڪٽ هجڻ لازمي آهي، خالي نه ٿو ڇڏي سگهجي
+        if(!selectedUserId) {
+            alert("مھرباني ڪري پهرين ڪو خاص يوزر (User) سليڪٽ ڪريو! ڪجھ به کالي نه ڇڏيو.");
+            return;
+        }
+
         const targetGmail = document.getElementById('task-target-gmail').value.trim();
         const mapsLink = document.getElementById('new-task-map').value.trim();
         const reviewText = document.getElementById('new-task-comment').value.trim();
         const adminMsg = document.getElementById('new-task-msg').value.trim();
         const reward = parseFloat(document.getElementById('new-task-reward').value) || 20;
 
-        if(!mapsLink || !reviewText) return alert("Please fill Maps Link and Review Comment!");
+        if(!mapsLink || !reviewText) return alert("مھرباني ڪري نقشي جو لنڪ (Maps Link) ۽ رويو تبصرو (Review Comment) لکو!");
 
         const { error } = await _supabase.from('tasks').insert([{
-            assigned_user_id: selectedUserId || null,
+            assigned_user_id: selectedUserId, // هميشه خاص يوزر جي آئي ڊي ويندي
             google_maps_link: mapsLink,
             review_text: reviewText,
             admin_message: adminMsg,
             target_gmail: targetGmail || null,
             reward: reward,
             status: 'active',
-            created_at: new Date().toISOString() // هتي ٽاسڪ جي ٺهڻ جو وقت محفوظ پيو ٿئي جنهن سان يوزر واري پاسي فلٽر ڪرڻ آسان ٿيندو
+            created_at: new Date().toISOString()
         }]);
 
         if(!error) {
-            alert("Task published successfully!");
+            alert("ٽاسڪ ڪاميابيءَ سان صرف سليڪٽ ڪيل يوزر ڏانھن پبلش ٿي ويو!");
             document.getElementById('new-task-map').value = '';
             document.getElementById('new-task-comment').value = '';
             document.getElementById('new-task-msg').value = '';
-            document.getElementById('task-target-gmail').innerHTML = '<option value="">-- Select user first --</option>';
+            document.getElementById('task-target-gmail').innerHTML = '<option value="">-- پهرين يوزر سليڪٽ ڪريو --</option>';
             document.getElementById('task-user-select').value = '';
             loadAdminTasksList();
         } else alert("Error: " + error.message);
@@ -292,17 +296,17 @@
         const container = document.getElementById('admin-tasks-list');
         container.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">Loading tasks...</p>';
 
-        const { data: tasks, error } = await _supabase.from('tasks').select('*').order('id', { ascending: false });
+        const { data: tasks, error } = await _supabase.from('tasks').select('*, profiles:assigned_user_id(full_name, phone)').order('id', { ascending: false });
         if(error) return container.innerHTML = `<p class="text-xs text-red-500">Error: ${error.message}</p>`;
 
         if(tasks && tasks.length > 0) {
             let html = '';
             tasks.forEach(t => {
-                const assignedText = t.assigned_user_id ? `<span class="text-amber-600 font-bold">Specific User Task</span>` : `<span class="text-blue-600 font-bold">General Task</span>`;
+                const userName = t.profiles?.full_name || 'مختص يوزر';
                 html += `
                     <div class="bg-slate-50 p-3 rounded-xl border space-y-1.5 text-xs">
                         <div class="flex justify-between items-center font-bold text-slate-700">
-                            <span>Task ID: #${t.id} (${assignedText})</span>
+                            <span>Task ID: #${t.id} (<span class="text-amber-600">👤 ${userName}</span>)</span>
                             <span class="text-emerald-600">Reward: Rs. ${t.reward}</span>
                         </div>
                         <p class="text-[11px] text-slate-600 truncate"><strong>Comment:</strong> ${t.review_text}</p>
@@ -607,7 +611,6 @@
         const btnReject = document.getElementById(`btn-reject-${subId}`);
 
         if (btnReject.disabled) return;
-        btnApprove.disabled = void 0;
         btnApprove.disabled = true;
         btnReject.disabled = true;
         btnReject.innerText = "Processing...";
