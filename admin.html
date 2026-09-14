@@ -35,10 +35,11 @@
         <div id="admin-main" class="hidden space-y-4">
             
             <!-- Navigation Tabs -->
-            <div class="grid grid-cols-3 bg-white p-1 rounded-2xl border text-xs font-bold text-center">
-                <button onclick="switchAdminTab('tasks')" id="atab-tasks" class="py-2 rounded-xl bg-slate-900 text-white">Create & Submissions</button>
-                <button onclick="switchAdminTab('users')" id="atab-users" class="py-2 rounded-xl text-slate-500">Users & Gmails</button>
-                <button onclick="switchAdminTab('clients')" id="atab-clients" class="py-2 rounded-xl text-slate-500">Client Orders</button>
+            <div class="grid grid-cols-4 bg-white p-1 rounded-2xl border text-xs font-bold text-center gap-1">
+                <button onclick="switchAdminTab('tasks')" id="atab-tasks" class="py-2 rounded-xl bg-slate-900 text-white">Tasks</button>
+                <button onclick="switchAdminTab('withdrawals')" id="atab-withdrawals" class="py-2 rounded-xl text-slate-500">Withdraws</button>
+                <button onclick="switchAdminTab('users')" id="atab-users" class="py-2 rounded-xl text-slate-500">Users</button>
+                <button onclick="switchAdminTab('clients')" id="atab-clients" class="py-2 rounded-xl text-slate-500">Clients</button>
             </div>
 
             <!-- TAB 1: CREATE TASKS & SUBMISSIONS -->
@@ -55,9 +56,9 @@
                             </select>
                         </div>
                         <div>
-                            <label class="text-[10px] text-slate-500 font-bold block mb-1">Target Gmail (User's Registered):</label>
+                            <label class="text-[10px] text-slate-500 font-bold block mb-1">Target Gmail:</label>
                             <select id="task-target-gmail" class="w-full border p-2 rounded-xl text-xs outline-none bg-slate-50">
-                                <option value="">-- Select user first or type custom --</option>
+                                <option value="">-- Select user first --</option>
                             </select>
                         </div>
                     </div>
@@ -68,13 +69,13 @@
                     </div>
 
                     <div>
-                        <label class="text-[10px] text-slate-500 font-bold block mb-1">Box 1: Review Comment Text (User will copy this):</label>
+                        <label class="text-[10px] text-slate-500 font-bold block mb-1">Review Comment Text:</label>
                         <textarea id="new-task-comment" rows="2" placeholder="Write review comment here..." class="w-full border p-2 rounded-xl text-xs outline-none"></textarea>
                     </div>
 
                     <div>
-                        <label class="text-[10px] text-slate-500 font-bold block mb-1">Box 2: Admin Message / Instructions for User:</label>
-                        <textarea id="new-task-msg" rows="2" placeholder="Instructions e.g., complete before evening..." class="w-full border p-2 rounded-xl text-xs outline-none"></textarea>
+                        <label class="text-[10px] text-slate-500 font-bold block mb-1">Admin Message / Instructions:</label>
+                        <textarea id="new-task-msg" rows="2" placeholder="Instructions..." class="w-full border p-2 rounded-xl text-xs outline-none"></textarea>
                     </div>
 
                     <div>
@@ -97,7 +98,18 @@
                 </div>
             </div>
 
-            <!-- TAB 2: USERS & GMAIL ACCOUNTS -->
+            <!-- TAB 2: WITHDRAWAL REQUESTS -->
+            <div id="asec-withdrawals" class="hidden bg-white p-4 rounded-2xl border shadow space-y-3">
+                <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
+                    <span>User Withdrawal Requests</span>
+                    <button onclick="loadWithdrawals()" class="text-[10px] text-blue-600 underline">Refresh</button>
+                </h3>
+                <div id="admin-withdrawals-list" class="space-y-3">
+                    <p class="text-xs text-slate-400 text-center py-4">Loading withdrawals...</p>
+                </div>
+            </div>
+
+            <!-- TAB 3: USERS & GMAIL ACCOUNTS -->
             <div id="asec-users" class="hidden bg-white p-4 rounded-2xl border shadow space-y-3">
                 <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
                     <span>All Registered Users & Their Gmails</span>
@@ -108,7 +120,7 @@
                 </div>
             </div>
 
-            <!-- TAB 3: CLIENT ORDERS -->
+            <!-- TAB 4: CLIENT ORDERS -->
             <div id="asec-clients" class="hidden bg-white p-4 rounded-2xl border shadow space-y-3">
                 <h3 class="font-bold text-xs text-slate-700 flex justify-between items-center">
                     <span>Client Review Orders Record</span>
@@ -156,6 +168,7 @@
             document.getElementById('admin-main').classList.remove('hidden');
             document.getElementById('admin-email').innerText = user.email;
             loadAdminData();
+            loadWithdrawals();
             loadUsersDropdown();
         } else {
             document.getElementById('admin-auth-block').classList.add('hidden');
@@ -164,13 +177,14 @@
     }
 
     function switchAdminTab(tab) {
-        ['tasks', 'users', 'clients'].forEach(t => {
+        ['tasks', 'withdrawals', 'users', 'clients'].forEach(t => {
             document.getElementById(`asec-${t}`).classList.add('hidden');
             document.getElementById(`atab-${t}`).className = "py-2 rounded-xl text-slate-500";
         });
         document.getElementById(`asec-${tab}`).classList.remove('hidden');
         document.getElementById(`atab-${tab}`).className = "py-2 rounded-xl bg-slate-900 text-white font-bold";
 
+        if(tab === 'withdrawals') loadWithdrawals();
         if(tab === 'users') loadAllUsers();
         if(tab === 'clients') loadClientOrders();
     }
@@ -279,6 +293,54 @@
             });
             container.innerHTML = html;
         } else container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No pending submissions.</p>';
+    }
+
+    async function loadWithdrawals() {
+        const container = document.getElementById('admin-withdrawals-list');
+        container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Loading withdrawals...</p>';
+
+        const { data: list, error } = await _supabase.from('withdrawals')
+            .select('*, profiles:user_id(full_name, phone)')
+            .order('id', { ascending: false });
+
+        if(error) return container.innerHTML = `<p class="text-xs text-red-500">Error: ${error.message}</p>`;
+
+        if(list && list.length > 0) {
+            let html = '';
+            list.forEach(w => {
+                const userName = w.profiles?.full_name || 'User';
+                const userPhone = w.profiles?.phone || 'No Phone';
+                const statusColor = w.status === 'approved' ? 'bg-emerald-100 text-emerald-700' : (w.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700');
+
+                html += `
+                    <div class="bg-slate-50 p-3 rounded-xl border space-y-2 text-xs">
+                        <div class="flex justify-between items-center font-bold text-slate-700">
+                            <span>👤 ${userName} (${userPhone})</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] ${statusColor}">${w.status || 'pending'}</span>
+                        </div>
+                        <div class="bg-white p-2.5 rounded border space-y-1">
+                            <p><strong>Amount:</strong> <span class="text-emerald-600 font-bold">Rs. ${w.amount}</span></p>
+                            <p><strong>Method:</strong> ${w.method || 'N/A'}</p>
+                            <p><strong>Account Number:</strong> <span class="font-mono text-blue-600 select-all">${w.account_number || w.account || 'N/A'}</span></p>
+                        </div>
+                        ${w.status === 'pending' ? `
+                        <div class="flex gap-2 pt-1">
+                            <button onclick="updateWithdrawalStatus(${w.id}, 'approved')" class="w-1/2 bg-emerald-600 text-white py-1.5 rounded-lg font-bold">Mark as Paid</button>
+                            <button onclick="updateWithdrawalStatus(${w.id}, 'rejected')" class="w-1/2 bg-red-600 text-white py-1.5 rounded-lg font-bold">Reject</button>
+                        </div>` : ''}
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        } else container.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">No withdrawal requests found.</p>';
+    }
+
+    async function updateWithdrawalStatus(id, newStatus) {
+        const { error } = await _supabase.from('withdrawals').update({ status: newStatus }).eq('id', id);
+        if(!error) {
+            alert(`Withdrawal marked as ${newStatus}!`);
+            loadWithdrawals();
+        } else alert("Error: " + error.message);
     }
 
     async function loadAllUsers() {
