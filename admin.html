@@ -273,7 +273,8 @@
             admin_message: adminMsg,
             target_gmail: targetGmail || null,
             reward: reward,
-            status: 'active'
+            status: 'active',
+            created_at: new Date().toISOString() // هتي ٽاسڪ جي ٺهڻ جو وقت محفوظ پيو ٿئي جنهن سان يوزر واري پاسي فلٽر ڪرڻ آسان ٿيندو
         }]);
 
         if(!error) {
@@ -416,7 +417,6 @@
     async function deleteApprovedSubmission(subId, userId, rewardAmount) {
         if(!confirm(`Are you sure you want to delete this approved submission? This will deduct Rs. ${rewardAmount} from the user's balance.`)) return;
 
-        // Fetch current user balance
         const { data: prof, error: profErr } = await _supabase.from('profiles').select('balance').eq('id', userId).single();
         if (profErr || !prof) {
             alert("Error fetching user profile balance.");
@@ -426,14 +426,12 @@
         const currentBal = prof.balance || 0;
         const newBal = Math.max(0, currentBal - rewardAmount);
 
-        // Update user balance
         const { error: balErr } = await _supabase.from('profiles').update({ balance: newBal }).eq('id', userId);
         if (balErr) {
             alert("Error updating user balance: " + balErr.message);
             return;
         }
 
-        // Delete submission
         const { error: delErr } = await _supabase.from('submissions').delete().eq('id', subId);
         if (delErr) {
             alert("Balance deducted, but error deleting submission: " + delErr.message);
@@ -609,12 +607,13 @@
         const btnReject = document.getElementById(`btn-reject-${subId}`);
 
         if (btnReject.disabled) return;
+        btnApprove.disabled = void 0;
         btnApprove.disabled = true;
         btnReject.disabled = true;
         btnReject.innerText = "Processing...";
 
         const { data: currentSub } = await _supabase.from('submissions').select('status').eq('id', subId).single();
-        if (!currentSub || !currentSub || currentSub.status !== 'pending') {
+        if (!currentSub || currentSub.status !== 'pending') {
             alert("This submission has already been processed.");
             loadAdminData();
             return;
