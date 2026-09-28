@@ -47,7 +47,7 @@
           <h5 class="card-title text-info mb-3">Stream Keys</h5>
           <div class="mb-3">
             <label class="form-label">Facebook Live Key/URL</label>
-            <input type="text" id="fbKey" class="form-control bg-dark text-white border-secondary" placeholder="FB Stream Key">
+            <input type="text" id="fbKey" class="form-control bg-dark text-white border-secondary" placeholder="FB Stream Key / RTMPS URL">
           </div>
           <div class="mb-3">
             <label class="form-label">YouTube Live Key/URL</label>
@@ -104,9 +104,10 @@
     const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let playlist = [];
+    let currentLiveState = false;
     let isEditing = false;
 
-    // Input ۾ ٽائپ ڪرڻ وقت Auto Refresh بند ڪرڻ لاءِ
+    // input ۾ ٽائپ ڪرڻ وقت auto-refresh کي روڪڻ لاءِ
     document.addEventListener('input', () => { isEditing = true; });
     document.addEventListener('focusin', () => { isEditing = true; });
 
@@ -123,8 +124,9 @@
       document.getElementById('logoUrl').value = data.logo_url || '';
       document.getElementById('logoSize').value = data.logo_size || '120';
 
+      currentLiveState = data.is_live || false;
       const badge = document.getElementById('liveStatusBadge');
-      if(data.is_live) {
+      if(currentLiveState) {
         badge.className = "status-badge bg-danger";
         badge.innerText = "🔴 LIVE";
       } else {
@@ -132,7 +134,7 @@
         badge.innerText = "⚪ OFF";
       }
 
-      playlist = data.playlist || [];
+      playlist = Array.isArray(data.playlist) ? data.playlist : [];
       renderPlaylist();
     }
 
@@ -143,11 +145,17 @@
         container.innerHTML += `
           <div class="input-group mb-2">
             <span class="input-group-text bg-dark text-secondary border-secondary">Track ${index + 1}</span>
-            <input type="text" class="form-control bg-dark text-white border-secondary" value="${item.url || ''}" onchange="playlist[${index}].url = this.value; isEditing = true;">
+            <input type="text" class="form-control bg-dark text-white border-secondary" value="${item.url || ''}" oninput="updatePlaylistUrl(${index}, this.value)">
             <button class="btn btn-outline-danger" onclick="removePlaylistItem(${index})">❌</button>
           </div>
         `;
       });
+    }
+
+    function updatePlaylistUrl(index, value) {
+      isEditing = true;
+      if(!playlist[index]) playlist[index] = {};
+      playlist[index].url = value;
     }
 
     function addPlaylistItem() {
@@ -168,18 +176,18 @@
       btnSave.disabled = true;
 
       const updateData = {
-        id: 1, // ID 1 کي لازمي طور شامل ڪيو ويو آهي
-        fb_key: document.getElementById('fbKey').value,
-        yt_key: document.getElementById('ytKey').value,
+        id: 1,
+        fb_key: document.getElementById('fbKey').value.trim(),
+        yt_key: document.getElementById('ytKey').value.trim(),
         program_name: document.getElementById('progName').value,
         ticker_text: document.getElementById('tickerText').value,
         logo_url: document.getElementById('logoUrl').value,
         logo_size: document.getElementById('logoSize').value,
         playlist: playlist,
+        is_live: currentLiveState,
         restart_trigger: Date.now()
       };
 
-      // update جي جاءِ تي upsert نئين Row به ٺاهيندو ۽ اپڊيٽ به ڪندو
       const { error } = await db.from('stream_config').upsert(updateData);
 
       btnSave.innerText = "💾 Save & Apply Settings";
@@ -195,8 +203,12 @@
     }
 
     async function toggleLive(status) {
+      currentLiveState = status;
       const { error } = await db.from('stream_config').upsert({ id: 1, is_live: status, restart_trigger: Date.now() });
       if(error) alert("Error: " + error.message);
+      else {
+        alert(status ? "لائيو اسٽريم شروع ڪئي وئي!" : "اسٽريم بند ڪئي وئي!");
+      }
       isEditing = false;
       loadData();
     }
