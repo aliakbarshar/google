@@ -106,15 +106,14 @@
     let playlist = [];
     let isEditing = false;
 
-    // input تي ٽائپ ڪرڻ وقت auto-refresh کي روڪڻ لاءِ
+    // Input ۾ ٽائپ ڪرڻ وقت Auto Refresh بند ڪرڻ لاءِ
     document.addEventListener('input', () => { isEditing = true; });
     document.addEventListener('focusin', () => { isEditing = true; });
 
     async function loadData() {
-      // جڏهن يوزر ڪجهه لکي رهيو هجي ته خودڪار اپڊيٽ مان لکيل ڊيٽا کي مٽائڻ نه ڏيو
       if (isEditing) return;
 
-      const { data, error } = await db.from('stream_config').select('*').eq('id', 1).single();
+      const { data, error } = await db.from('stream_config').select('*').eq('id', 1).maybeSingle();
       if(error || !data) return;
 
       document.getElementById('fbKey').value = data.fb_key || '';
@@ -169,6 +168,7 @@
       btnSave.disabled = true;
 
       const updateData = {
+        id: 1, // ID 1 کي لازمي طور شامل ڪيو ويو آهي
         fb_key: document.getElementById('fbKey').value,
         yt_key: document.getElementById('ytKey').value,
         program_name: document.getElementById('progName').value,
@@ -179,7 +179,8 @@
         restart_trigger: Date.now()
       };
 
-      const { error } = await db.from('stream_config').update(updateData).eq('id', 1);
+      // update جي جاءِ تي upsert نئين Row به ٺاهيندو ۽ اپڊيٽ به ڪندو
+      const { error } = await db.from('stream_config').upsert(updateData);
 
       btnSave.innerText = "💾 Save & Apply Settings";
       btnSave.disabled = false;
@@ -194,14 +195,14 @@
     }
 
     async function toggleLive(status) {
-      const { error } = await db.from('stream_config').update({ is_live: status, restart_trigger: Date.now() }).eq('id', 1);
+      const { error } = await db.from('stream_config').upsert({ id: 1, is_live: status, restart_trigger: Date.now() });
       if(error) alert("Error: " + error.message);
       isEditing = false;
       loadData();
     }
 
     async function triggerManualSwitch() {
-      const { error } = await db.from('stream_config').update({ restart_trigger: Date.now() }).eq('id', 1);
+      const { error } = await db.from('stream_config').upsert({ id: 1, restart_trigger: Date.now() });
       if(error) alert("Error: " + error.message);
       else alert('ٽريڪ مٽائڻ جو سگنل موڪليو ويو!');
     }
