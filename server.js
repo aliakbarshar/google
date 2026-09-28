@@ -1,8 +1,17 @@
+// FFmpeg ۽ FFprobe Static Path Setup (must be at top)
+const ffmpegPath = require('ffmpeg-static');
+const ffprobePath = require('ffprobe-static').path;
+const path = require('path');
+
+// Execute PATH Setup for Railway Linux Environment
+if (ffmpegPath) {
+  process.env.PATH = `${path.dirname(ffmpegPath)}:${path.dirname(ffprobePath)}:${process.env.PATH}`;
+}
+
 const { createClient } = require('@supabase/supabase-js');
 const { spawn, exec } = require('child_process');
 const express = require('express');
 const fs = require('fs');
-const path = require('path');
 const http = require('http');
 
 const app = express();
@@ -34,7 +43,7 @@ function sanitizeText(text) {
 
 function getVideoDuration(url) {
   return new Promise((resolve) => {
-    exec(`ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${url}"`, (error, stdout) => {
+    exec(`"${ffprobePath}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${url}"`, (error, stdout) => {
       if (error || !stdout) {
         resolve(null);
       } else {
@@ -193,9 +202,8 @@ async function startBroadcaster(config) {
   ];
 
   let targets = [];
-  // Escaping quotes for tee muxer to handle RTMPS URLs safely
-  if (fbTarget) targets.push(`[f=flv:onfail=ignore]'${fbTarget}'`);
-  if (ytTarget) targets.push(`[f=flv:onfail=ignore]'${ytTarget}'`);
+  if (fbTarget) targets.push(`[f=flv:onfail=ignore]${fbTarget}`);
+  if (ytTarget) targets.push(`[f=flv:onfail=ignore]${ytTarget}`);
 
   if (targets.length > 0) {
     ffmpegArgs.push('-f', 'tee', targets.join('|'));
@@ -203,7 +211,7 @@ async function startBroadcaster(config) {
 
   try {
     console.log(`▶ Starting Stream Track [Index ${trackIndex}]: ${activeVideoUrl}`);
-    ffmpegProcess = spawn('ffmpeg', ffmpegArgs);
+    ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
 
     if (ffmpegProcess) {
       ffmpegProcess.stderr.on('data', (data) => {
@@ -231,7 +239,6 @@ async function startBroadcaster(config) {
           autoSwitchTimer = null;
         }
         
-        // Auto Next only if it wasn't triggered by autoSwitchTimer already
         if (currentConfig && currentConfig.is_live && !isBusySwitching) {
           handleNextTrackAuto();
         }
