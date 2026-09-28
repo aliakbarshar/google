@@ -1,9 +1,8 @@
-// FFmpeg ۽ FFprobe Static Path Setup (must be at top)
+// FFmpeg ۽ FFprobe Static Path Setup
 const ffmpegPath = require('ffmpeg-static');
 const ffprobePath = require('ffprobe-static').path;
 const path = require('path');
 
-// Execute PATH Setup for Railway Linux Environment
 if (ffmpegPath) {
   process.env.PATH = `${path.dirname(ffmpegPath)}:${path.dirname(ffprobePath)}:${process.env.PATH}`;
 }
@@ -202,8 +201,14 @@ async function startBroadcaster(config) {
   ];
 
   let targets = [];
-  if (fbTarget) targets.push(`[f=flv:onfail=ignore]${fbTarget}`);
-  if (ytTarget) targets.push(`[f=flv:onfail=ignore]${ytTarget}`);
+  if (fbTarget) {
+    const escapedFb = fbTarget.replace(/:/g, '\\:');
+    targets.push(`[f=flv:onfail=ignore]${escapedFb}`);
+  }
+  if (ytTarget) {
+    const escapedYt = ytTarget.replace(/:/g, '\\:');
+    targets.push(`[f=flv:onfail=ignore]${escapedYt}`);
+  }
 
   if (targets.length > 0) {
     ffmpegArgs.push('-f', 'tee', targets.join('|'));
@@ -270,10 +275,8 @@ function stopBroadcaster() {
   }
 }
 
-// 2 سيڪنڊن جي پولنگ اسٽيٽ چيڪ ڪرڻ لاءِ
 setInterval(checkDatabaseState, 2000);
 
-// Anti-Sleep Ping
 setInterval(() => {
   http.get(`http://localhost:${PORT}`, () => {}).on('error', () => {});
 }, 3 * 60 * 1000);
