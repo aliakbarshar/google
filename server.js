@@ -1,9 +1,9 @@
-// FFmpeg ۽ FFprobe Static Path Setup
+// FFmpeg ۽ FFprobe Static Path Setup (مٿان هجڻ ضروري آهي)
 const ffmpegPath = require('ffmpeg-static');
 const ffprobePath = require('ffprobe-static').path;
 const path = require('path');
 
-if (ffmpegPath) {
+if (ffmpegPath && ffprobePath) {
   process.env.PATH = `${path.dirname(ffmpegPath)}:${path.dirname(ffprobePath)}:${process.env.PATH}`;
 }
 
@@ -42,7 +42,8 @@ function sanitizeText(text) {
 
 function getVideoDuration(url) {
   return new Promise((resolve) => {
-    exec(`"${ffprobePath}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${url}"`, (error, stdout) => {
+    const cmd = `"${ffprobePath}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${url}"`;
+    exec(cmd, (error, stdout) => {
       if (error || !stdout) {
         resolve(null);
       } else {
