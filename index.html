@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="sd" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Studio Engine V2 Panel</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; color: #fff; }
+    .btn-live { background-color: #ef4444; color: white; font-weight: bold; }
+    .btn-live:hover { background-color: #dc2626; }
+    .btn-stop { background-color: #64748b; color: white; }
+    .status-badge { font-size: 0.9rem; padding: 6px 14px; border-radius: 20px; }
+  </style>
+</head>
+<body class="p-3 p-md-4">
+  <div class="container" style="max-width: 900px;">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary">
+      <h2>🚀 Live Studio Engine V2</h2>
+      <span id="liveStatusBadge" class="status-badge bg-secondary">چيڪنگ...</span>
+    </div>
+
+    <!-- Live Control -->
+    <div class="card p-3 mb-4">
+      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h5 class="m-0">لائيو اسٽريم ڪنٽرول</h5>
+          <small class="text-secondary">اسٽريم آن يا آف ڪرڻ لاءِ هيٺيان بٽڻ دٻايو</small>
+        </div>
+        <div>
+          <button id="btnStart" class="btn btn-live me-2" onclick="toggleLive(true)">▶️ Go Live</button>
+          <button id="btnStop" class="btn btn-stop" onclick="toggleLive(false)">⏹️ Stop Stream</button>
+          <button class="btn btn-warning ms-2" onclick="triggerManualSwitch()">⏭️ Next Track</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inputs Config -->
+    <div class="row g-3">
+      <!-- Keys -->
+      <div class="col-md-6">
+        <div class="card p-3 h-100">
+          <h5 class="card-title text-info mb-3">Stream Keys</h5>
+          <div class="mb-3">
+            <label class="form-label">Facebook Live Key/URL</label>
+            <input type="text" id="fbKey" class="form-control bg-dark text-white border-secondary" placeholder="FB Stream Key">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">YouTube Live Key/URL</label>
+            <input type="text" id="ytKey" class="form-control bg-dark text-white border-secondary" placeholder="YT Stream Key">
+          </div>
+        </div>
+      </div>
+
+      <!-- Overlays -->
+      <div class="col-md-6">
+        <div class="card p-3 h-100">
+          <h5 class="card-title text-info mb-3">Branding & Text</h5>
+          <div class="mb-2">
+            <label class="form-label">Program Name (مٿيون عنوان)</label>
+            <input type="text" id="progName" class="form-control bg-dark text-white border-secondary">
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Ticker Text (هيٺين پٽي)</label>
+            <input type="text" id="tickerText" class="form-control bg-dark text-white border-secondary">
+          </div>
+          <div class="row g-2">
+            <div class="col-8">
+              <label class="form-label">Logo PNG URL</label>
+              <input type="text" id="logoUrl" class="form-control bg-dark text-white border-secondary">
+            </div>
+            <div class="col-4">
+              <label class="form-label">Size (px)</label>
+              <input type="number" id="logoSize" class="form-control bg-dark text-white border-secondary" value="120">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Playlist Manager -->
+      <div class="col-12">
+        <div class="card p-3">
+          <h5 class="card-title text-info mb-3">Playlist Links (Direct MP4 URLs)</h5>
+          <div id="playlistContainer"></div>
+          <button class="btn btn-outline-info btn-sm mt-2" onclick="addPlaylistItem()">+ Add Video Link</button>
+        </div>
+      </div>
+
+      <div class="col-12 text-end">
+        <button class="btn btn-success btn-lg px-5" onclick="saveConfiguration()">💾 Save & Apply Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://zpglwxppgzdjirnvvlfg.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZ2x3eHBwZ3pkamlybnZ2bGZnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTI3ODU1OSwiZXhwIjoyMTA0ODU0NTU5fQ.oV7-HhtrPXD0AhiDyA26SLqQfJWoMJS1lY5JO18TBWs';
+    
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let playlist = [];
+
+    async function loadData() {
+      const { data, error } = await db.from('stream_config').select('*').eq('id', 1).single();
+      if(error || !data) return;
+
+      document.getElementById('fbKey').value = data.fb_key || '';
+      document.getElementById('ytKey').value = data.yt_key || '';
+      document.getElementById('progName').value = data.program_name || '';
+      document.getElementById('tickerText').value = data.ticker_text || '';
+      document.getElementById('logoUrl').value = data.logo_url || '';
+      document.getElementById('logoSize').value = data.logo_size || '120';
+
+      const badge = document.getElementById('liveStatusBadge');
+      if(data.is_live) {
+        badge.className = "status-badge bg-danger";
+        badge.innerText = "🔴 LIVE";
+      } else {
+        badge.className = "status-badge bg-secondary";
+        badge.innerText = "⚪ OFF";
+      }
+
+      playlist = data.playlist || [];
+      renderPlaylist();
+    }
+
+    function renderPlaylist() {
+      const container = document.getElementById('playlistContainer');
+      container.innerHTML = '';
+      playlist.forEach((item, index) => {
+        container.innerHTML += `
+          <div class="input-group mb-2">
+            <span class="input-group-text bg-dark text-secondary border-secondary">Track ${index + 1}</span>
+            <input type="text" class="form-control bg-dark text-white border-secondary" value="${item.url}" onchange="playlist[${index}].url = this.value">
+            <button class="btn btn-outline-danger" onclick="removePlaylistItem(${index})">❌</button>
+          </div>
+        `;
+      });
+    }
+
+    function addPlaylistItem() {
+      playlist.push({ url: '' });
+      renderPlaylist();
+    }
+
+    function removePlaylistItem(idx) {
+      playlist.splice(idx, 1);
+      renderPlaylist();
+    }
+
+    async function saveConfiguration() {
+      const updateData = {
+        fb_key: document.getElementById('fbKey').value,
+        yt_key: document.getElementById('ytKey').value,
+        program_name: document.getElementById('progName').value,
+        ticker_text: document.getElementById('tickerText').value,
+        logo_url: document.getElementById('logoUrl').value,
+        logo_size: document.getElementById('logoSize').value,
+        playlist: playlist
+      };
+
+      await db.from('stream_config').update(updateData).eq('id', 1);
+      alert('سيٽنگس محفوظ ٿي ويون!');
+      loadData();
+    }
+
+    async function toggleLive(status) {
+      await db.from('stream_config').update({ is_live: status, restart_trigger: Date.now() }).eq('id', 1);
+      loadData();
+    }
+
+    async function triggerManualSwitch() {
+      await db.from('stream_config').update({ restart_trigger: Date.now() }).eq('id', 1);
+      alert('ٽريڪ مٽائڻ جو سگنل موڪليو ويو!');
+    }
+
+    loadData();
+    setInterval(loadData, 5000);
+  </script>
+</body>
+</html>
