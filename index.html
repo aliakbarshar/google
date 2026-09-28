@@ -91,7 +91,7 @@
       </div>
 
       <div class="col-12 text-end">
-        <button class="btn btn-success btn-lg px-5" onclick="saveConfiguration()">💾 Save & Apply Settings</button>
+        <button id="btnSave" class="btn btn-success btn-lg px-5" onclick="saveConfiguration()">💾 Save & Apply Settings</button>
       </div>
     </div>
   </div>
@@ -104,8 +104,16 @@
     const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let playlist = [];
+    let isEditing = false;
+
+    // input تي ٽائپ ڪرڻ وقت auto-refresh کي روڪڻ لاءِ
+    document.addEventListener('input', () => { isEditing = true; });
+    document.addEventListener('focusin', () => { isEditing = true; });
 
     async function loadData() {
+      // جڏهن يوزر ڪجهه لکي رهيو هجي ته خودڪار اپڊيٽ مان لکيل ڊيٽا کي مٽائڻ نه ڏيو
+      if (isEditing) return;
+
       const { data, error } = await db.from('stream_config').select('*').eq('id', 1).single();
       if(error || !data) return;
 
@@ -136,7 +144,7 @@
         container.innerHTML += `
           <div class="input-group mb-2">
             <span class="input-group-text bg-dark text-secondary border-secondary">Track ${index + 1}</span>
-            <input type="text" class="form-control bg-dark text-white border-secondary" value="${item.url}" onchange="playlist[${index}].url = this.value">
+            <input type="text" class="form-control bg-dark text-white border-secondary" value="${item.url || ''}" onchange="playlist[${index}].url = this.value; isEditing = true;">
             <button class="btn btn-outline-danger" onclick="removePlaylistItem(${index})">❌</button>
           </div>
         `;
@@ -144,16 +152,22 @@
     }
 
     function addPlaylistItem() {
+      isEditing = true;
       playlist.push({ url: '' });
       renderPlaylist();
     }
 
     function removePlaylistItem(idx) {
+      isEditing = true;
       playlist.splice(idx, 1);
       renderPlaylist();
     }
 
     async function saveConfiguration() {
+      const btnSave = document.getElementById('btnSave');
+      btnSave.innerText = "⏳ Saving...";
+      btnSave.disabled = true;
+
       const updateData = {
         fb_key: document.getElementById('fbKey').value,
         yt_key: document.getElementById('ytKey').value,
@@ -161,22 +175,35 @@
         ticker_text: document.getElementById('tickerText').value,
         logo_url: document.getElementById('logoUrl').value,
         logo_size: document.getElementById('logoSize').value,
-        playlist: playlist
+        playlist: playlist,
+        restart_trigger: Date.now()
       };
 
-      await db.from('stream_config').update(updateData).eq('id', 1);
-      alert('سيٽنگس محفوظ ٿي ويون!');
-      loadData();
+      const { error } = await db.from('stream_config').update(updateData).eq('id', 1);
+
+      btnSave.innerText = "💾 Save & Apply Settings";
+      btnSave.disabled = false;
+
+      if (error) {
+        alert("غلطي! ڊيٽا محفوظ نه ٿي سگهي: " + error.message);
+      } else {
+        alert('سيٽنگس مڪمل محفوظ ٿي ويون!');
+        isEditing = false;
+        loadData();
+      }
     }
 
     async function toggleLive(status) {
-      await db.from('stream_config').update({ is_live: status, restart_trigger: Date.now() }).eq('id', 1);
+      const { error } = await db.from('stream_config').update({ is_live: status, restart_trigger: Date.now() }).eq('id', 1);
+      if(error) alert("Error: " + error.message);
+      isEditing = false;
       loadData();
     }
 
     async function triggerManualSwitch() {
-      await db.from('stream_config').update({ restart_trigger: Date.now() }).eq('id', 1);
-      alert('ٽريڪ مٽائڻ جو سگنل موڪليو ويو!');
+      const { error } = await db.from('stream_config').update({ restart_trigger: Date.now() }).eq('id', 1);
+      if(error) alert("Error: " + error.message);
+      else alert('ٽريڪ مٽائڻ جو سگنل موڪليو ويو!');
     }
 
     loadData();
