@@ -98,7 +98,7 @@ async function checkDatabaseState() {
     currentConfig = config;
 
     if (config.restart_trigger && config.restart_trigger !== lastRestartTrigger) {
-      console.log("🔄 Manual Switch Triggered from HTML Control Panel!");
+      console.log("🔄 Manual Switch Triggered from Control Panel!");
       lastRestartTrigger = config.restart_trigger;
       startBroadcaster(config);
       return;
@@ -193,8 +193,9 @@ async function startBroadcaster(config) {
   ];
 
   let targets = [];
-  if (fbTarget) targets.push(`[f=flv:onfail=ignore]${fbTarget}`);
-  if (ytTarget) targets.push(`[f=flv:onfail=ignore]${ytTarget}`);
+  // Escaping quotes for tee muxer to handle RTMPS URLs safely
+  if (fbTarget) targets.push(`[f=flv:onfail=ignore]'${fbTarget}'`);
+  if (ytTarget) targets.push(`[f=flv:onfail=ignore]'${ytTarget}'`);
 
   if (targets.length > 0) {
     ffmpegArgs.push('-f', 'tee', targets.join('|'));
@@ -214,7 +215,7 @@ async function startBroadcaster(config) {
 
       const duration = await getVideoDuration(activeVideoUrl);
       if (duration && duration > 10) {
-        const switchDelay = (duration - 5) * 1000;
+        const switchDelay = (duration - 3) * 1000;
         console.log(`⏱️ Duration: ${duration.toFixed(1)}s. Switch timer set to: ${Math.round(switchDelay / 1000)}s.`);
         
         autoSwitchTimer = setTimeout(() => {
@@ -225,8 +226,12 @@ async function startBroadcaster(config) {
       ffmpegProcess.on('close', (code) => {
         console.log(`[FFmpeg Ended] Exit Code: ${code}`);
         ffmpegProcess = null;
-        if (autoSwitchTimer) clearTimeout(autoSwitchTimer);
+        if (autoSwitchTimer) {
+          clearTimeout(autoSwitchTimer);
+          autoSwitchTimer = null;
+        }
         
+        // Auto Next only if it wasn't triggered by autoSwitchTimer already
         if (currentConfig && currentConfig.is_live && !isBusySwitching) {
           handleNextTrackAuto();
         }
