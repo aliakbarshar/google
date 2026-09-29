@@ -16,7 +16,7 @@ const http = require('http');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Supabase Connection
+// Supabase Connection (توهان جون موڪليل چابيون سيٽ ڪيون ويون آهن)
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://zpglwxppgzdjirnvvlfg.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZ2x3eHBwZ3pkamlybnZ2bGZnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTI3ODU1OSwiZXhwIjoyMTA0ODU0NTU5fQ.oV7-HhtrPXD0AhiDyA26SLqQfJWoMJS1lY5JO18TBWs';
 
@@ -32,12 +32,15 @@ const FONT_PATH = path.join(__dirname, 'sindhi.ttf');
 
 console.log("🚀 Live Studio Engine v2 Started Successfully...");
 
+// FFmpeg drawtext فلٽر لاءِ متن کي محفوظ (Sanitize) ڪرڻ
 function sanitizeText(text) {
   if (!text) return '';
   return text
+    .toString()
     .replace(/\\/g, '\\\\')
     .replace(/'/g, "'\\''")
-    .replace(/:/g, '\\:');
+    .replace(/:/g, '\\:')
+    .replace(/%/g, '\\%');
 }
 
 function getVideoDuration(url) {
@@ -165,16 +168,28 @@ async function startBroadcaster(config) {
   let videoFilter = `[1:v]scale=${logoSize}:-1[logo];[0:v][logo]overlay=${overlayPos}[v1]`;
   
   const fontOpt = fs.existsSync(FONT_PATH) 
-    ? `fontfile='${FONT_PATH}':text_shaping=1` 
-    : `font='DejaVu Sans':text_shaping=1`;
+    ? `fontfile='${FONT_PATH.replace(/\\/g, '/')}'` 
+    : `font='DejaVu Sans'`;
 
-  if (program || nextTrk || ticker) {
-    videoFilter += `;[v1]drawtext=text='${program}':x=30:y=30:fontsize=32:fontcolor=white:box=1:boxcolor=black@0.6:boxborderw=6:${fontOpt},` +
-                   `drawtext=text='${nextTrk}':x=30:y=75:fontsize=22:fontcolor=yellow:box=1:boxcolor=black@0.4:boxborderw=4:${fontOpt},` +
-                   `drawtext=text='${ticker}':x=-tw+mod(t*140\\,w+tw):y=h-50:fontsize=28:fontcolor=white:box=1:boxcolor=red@0.85:boxborderw=10:${fontOpt}[outv]`;
-  } else {
-    videoFilter += `;[v1]null[outv]`;
+  let currentStreamVar = 'v1';
+
+  // ٽيڪسٽ پائپ لائين (Dynamic Filter) - ان سان خالي فيلڊز جي ڪري FFmpeg Crash نه ٿيندو
+  if (program) {
+    videoFilter += `;[${currentStreamVar}]drawtext=text='${program}':x=30:y=30:fontsize=32:fontcolor=white:box=1:boxcolor=black@0.6:boxborderw=6:${fontOpt}[v_prg]`;
+    currentStreamVar = 'v_prg';
   }
+
+  if (nextTrk) {
+    videoFilter += `;[${currentStreamVar}]drawtext=text='${nextTrk}':x=30:y=75:fontsize=22:fontcolor=yellow:box=1:boxcolor=black@0.4:boxborderw=4:${fontOpt}[v_nxt]`;
+    currentStreamVar = 'v_nxt';
+  }
+
+  if (ticker) {
+    videoFilter += `;[${currentStreamVar}]drawtext=text='${ticker}':x=-tw+mod(t*140\\,w+tw):y=h-50:fontsize=28:fontcolor=white:box=1:boxcolor=red@0.85:boxborderw=10:${fontOpt}[v_tck]`;
+    currentStreamVar = 'v_tck';
+  }
+
+  videoFilter += `;[${currentStreamVar}]null[outv]`;
 
   let ffmpegArgs = [
     '-re',
@@ -222,15 +237,15 @@ async function startBroadcaster(config) {
     if (ffmpegProcess) {
       ffmpegProcess.stderr.on('data', (data) => {
         const str = data.toString();
-        if (str.includes('Error') || str.includes('failed')) {
-          console.error(`[FFmpeg Log]: ${str.trim()}`);
+        if (str.includes('Error') || str.includes('failed') || str.includes('Invalid')) {
+          console.error(`[FFmpeg Error]: ${str.trim()}`);
         }
       });
 
       const duration = await getVideoDuration(activeVideoUrl);
       if (duration && duration > 10) {
         const switchDelay = (duration - 3) * 1000;
-        console.log(`⏱️ Duration: ${duration.toFixed(1)}s. Switch timer set to: ${Math.round(switchDelay / 1000)}s.`);
+        console.log(`⏱️ Duration: ${duration.toFixed(1)}s. Auto switch set to: ${Math.round(switchDelay / 1000)}s.`);
         
         autoSwitchTimer = setTimeout(() => {
           handleNextTrackAuto();
@@ -278,6 +293,7 @@ function stopBroadcaster() {
 
 setInterval(checkDatabaseState, 2000);
 
+// Ping loop for host availability
 setInterval(() => {
   http.get(`http://localhost:${PORT}`, () => {}).on('error', () => {});
 }, 3 * 60 * 1000);
