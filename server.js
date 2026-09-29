@@ -1,4 +1,3 @@
-// FFmpeg ۽ FFprobe Static Path Setup
 const ffmpegPath = require('ffmpeg-static');
 const ffprobePath = require('ffprobe-static').path;
 const path = require('path');
@@ -11,7 +10,7 @@ const { createClient } = require('@supabase/supabase-js');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Supabase Connection
+// Supabase Configuration
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://zpglwxppgzdjirnvvlfg.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZ2x3eHBwZ3pkamlybnZ2bGZnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTI3ODU1OSwiZXhwIjoyMTA0ODU0NTU5fQ.oV7-HhtrPXD0AhiDyA26SLqQfJWoMJS1lY5JO18TBWs';
 
@@ -25,9 +24,9 @@ let isBusySwitching = false;
 
 const FONT_PATH = path.join(__dirname, 'sindhi.ttf');
 
-console.log("🚀 Live Studio Engine v2 Started Successfully...");
+console.log("🚀 Live Studio Engine v3.0 (Facebook Optimized) Started!");
 
-// FFmpeg drawtext فلٽر لاءِ متن کي محفوظ (Sanitize) ڪرڻ
+// Text Escaping for FFmpeg Drawtext
 function sanitizeText(text) {
   if (!text) return '';
   return text
@@ -38,6 +37,7 @@ function sanitizeText(text) {
     .replace(/%/g, '\\%');
 }
 
+// Get Video Duration via FFprobe
 function getVideoDuration(url) {
   return new Promise((resolve) => {
     const cmd = `"${ffprobePath}" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${url}"`;
@@ -52,6 +52,7 @@ function getVideoDuration(url) {
   });
 }
 
+// Auto Track Switch Logic
 async function handleNextTrackAuto() {
   if (isBusySwitching) return;
   isBusySwitching = true;
@@ -95,6 +96,7 @@ async function handleNextTrackAuto() {
   }
 }
 
+// Database Listener Loop
 async function checkDatabaseState() {
   if (isBusySwitching) return;
 
@@ -105,17 +107,17 @@ async function checkDatabaseState() {
     currentConfig = config;
 
     if (config.restart_trigger && config.restart_trigger !== lastRestartTrigger) {
-      console.log("🔄 Manual Switch Triggered from Control Panel!");
+      console.log("🔄 Configuration Changed - Restarting Stream!");
       lastRestartTrigger = config.restart_trigger;
       startBroadcaster(config);
       return;
     }
 
     if (!config.is_live && ffmpegProcess) {
-      console.log("⏹️ Stream OFF Signal Received.");
+      console.log("⏹️ Stream STOP Signal Received.");
       stopBroadcaster();
     } else if (config.is_live && !ffmpegProcess && !isBusySwitching) {
-      console.log("▶️ Stream ON Signal Received.");
+      console.log("▶️ Stream START Signal Received.");
       if (config.restart_trigger) lastRestartTrigger = config.restart_trigger;
       startBroadcaster(config);
     }
@@ -124,6 +126,7 @@ async function checkDatabaseState() {
   }
 }
 
+// Main FFmpeg Broadcaster
 async function startBroadcaster(config) {
   stopBroadcaster();
 
@@ -140,12 +143,29 @@ async function startBroadcaster(config) {
   let ytKey = config.yt_key ? config.yt_key.trim() : '';
 
   if (!fbKey && !ytKey) {
-    console.log("⚠️ No Stream Keys provided in Facebook or YouTube field.");
+    console.log("⚠️ No Stream Key provided for Facebook or YouTube.");
     return;
   }
 
-  let fbTarget = fbKey ? (fbKey.startsWith('rtmp') ? fbKey : `rtmps://live-api-s.facebook.com:443/rtmp/${fbKey}`) : '';
-  let ytTarget = ytKey ? (ytKey.startsWith('rtmp') ? ytKey : `rtmp://a.rtmp.youtube.com/live2/${ytKey}`) : '';
+  // Format Facebook RTMPS Target
+  let fbTarget = '';
+  if (fbKey) {
+    if (fbKey.startsWith('rtmp://') || fbKey.startsWith('rtmps://')) {
+      fbTarget = fbKey;
+    } else {
+      fbTarget = `rtmps://live-api-s.facebook.com:443/rtmp/${fbKey}`;
+    }
+  }
+
+  // Format YouTube RTMP Target
+  let ytTarget = '';
+  if (ytKey) {
+    if (ytKey.startsWith('rtmp://') || ytKey.startsWith('rtmps://')) {
+      ytTarget = ytKey;
+    } else {
+      ytTarget = `rtmp://a.rtmp.youtube.com/live2/${ytKey}`;
+    }
+  }
 
   const program = sanitizeText(config.program_name || '');
   const nextTrk = sanitizeText(config.next_track || '');
@@ -197,7 +217,7 @@ async function startBroadcaster(config) {
     '-map', '[outv]',
     '-map', '0:a?',
     '-c:v', 'libx264',
-    '-preset', 'ultrafast',
+    '-preset', 'veryfast',
     '-tune', 'zerolatency',
     '-b:v', '2500k',
     '-maxrate', '3000k',
@@ -207,39 +227,37 @@ async function startBroadcaster(config) {
     '-c:a', 'aac',
     '-b:a', '128k',
     '-ar', '44100',
-    '-ac', '2'
+    '-ac', '2',
+    '-flvflags', 'no_duration_filesize'
   ];
 
-  let targets = [];
-  if (fbTarget) {
-    const escapedFb = fbTarget.replace(/:/g, '\\:');
-    targets.push(`[f=flv:onfail=ignore]${escapedFb}`);
-  }
-  if (ytTarget) {
-    const escapedYt = ytTarget.replace(/:/g, '\\:');
-    targets.push(`[f=flv:onfail=ignore]${escapedYt}`);
-  }
-
-  if (targets.length > 0) {
-    ffmpegArgs.push('-f', 'tee', targets.join('|'));
+  // Output targets
+  if (fbTarget && ytTarget) {
+    const escFb = fbTarget.replace(/:/g, '\\:');
+    const escYt = ytTarget.replace(/:/g, '\\:');
+    ffmpegArgs.push('-f', 'tee', `[f=flv:onfail=ignore]${escFb}|[f=flv:onfail=ignore]${escYt}`);
+  } else if (fbTarget) {
+    ffmpegArgs.push('-f', 'flv', fbTarget);
+  } else if (ytTarget) {
+    ffmpegArgs.push('-f', 'flv', ytTarget);
   }
 
   try {
-    console.log(`▶ Starting Stream Track [Index ${trackIndex}]: ${activeVideoUrl}`);
+    console.log(`▶ Starting Live Transmission on: ${fbTarget ? 'Facebook' : ''} ${ytTarget ? 'YouTube' : ''}`);
     ffmpegProcess = spawn(ffmpegPath, ffmpegArgs);
 
     if (ffmpegProcess) {
       ffmpegProcess.stderr.on('data', (data) => {
         const str = data.toString();
         if (str.includes('Error') || str.includes('failed') || str.includes('Invalid')) {
-          console.error(`[FFmpeg Log]: ${str.trim()}`);
+          console.error(`[FFmpeg Alert]: ${str.trim()}`);
         }
       });
 
       const duration = await getVideoDuration(activeVideoUrl);
       if (duration && duration > 10) {
         const switchDelay = (duration - 3) * 1000;
-        console.log(`⏱️ Duration: ${duration.toFixed(1)}s. Auto switch set to: ${Math.round(switchDelay / 1000)}s.`);
+        console.log(`⏱️ Duration: ${duration.toFixed(1)}s. Auto switch in: ${Math.round(switchDelay / 1000)}s.`);
         
         autoSwitchTimer = setTimeout(() => {
           handleNextTrackAuto();
@@ -247,7 +265,7 @@ async function startBroadcaster(config) {
       }
 
       ffmpegProcess.on('close', (code) => {
-        console.log(`[FFmpeg Ended] Exit Code: ${code}`);
+        console.log(`[FFmpeg Closed] Code: ${code}`);
         ffmpegProcess = null;
         if (autoSwitchTimer) {
           clearTimeout(autoSwitchTimer);
@@ -260,13 +278,13 @@ async function startBroadcaster(config) {
       });
 
       ffmpegProcess.on('error', (err) => {
-        console.error("FFmpeg Process Error:", err.message);
+        console.error("FFmpeg Execution Error:", err.message);
         ffmpegProcess = null;
       });
     }
 
   } catch (e) {
-    console.error("Exception in Broadcaster:", e.message);
+    console.error("Broadcaster Failure Exception:", e.message);
     ffmpegProcess = null;
   }
 }
@@ -287,7 +305,7 @@ function stopBroadcaster() {
 
 setInterval(checkDatabaseState, 2000);
 
-// Self Ping Loop - ڪلاؤڊ سرور کي سمهڻ (Sleep) کان بچائڻ لاءِ
+// Anti-Sleep Self Ping
 setInterval(() => {
   http.get(`http://localhost:${PORT}`, () => {}).on('error', () => {});
 }, 3 * 60 * 1000);
@@ -298,5 +316,5 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Port Binding Update: 0.0.0.0 شامل ڪئي وئي آهي
-app.listen(PORT, '0.0.0.0', () => console.log(`Server listening on Port ${PORT}`));
+// Port listener for Docker / Render / Railway
+app.listen(PORT, '0.0.0.0', () => console.log(`Server actively running on Port ${PORT}`));
