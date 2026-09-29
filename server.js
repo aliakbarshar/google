@@ -1,22 +1,17 @@
-// FFmpeg ۽ FFprobe Static Path Setup (مٿان هجڻ ضروري آهي)
+// FFmpeg ۽ FFprobe Static Path Setup
 const ffmpegPath = require('ffmpeg-static');
 const ffprobePath = require('ffprobe-static').path;
 const path = require('path');
-
-if (ffmpegPath && ffprobePath) {
-  process.env.PATH = `${path.dirname(ffmpegPath)}:${path.dirname(ffprobePath)}:${process.env.PATH}`;
-}
-
-const { createClient } = require('@supabase/supabase-js');
-const { spawn, exec } = require('child_process');
-const express = require('express');
 const fs = require('fs');
 const http = require('http');
+const express = require('express');
+const { spawn, exec } = require('child_process');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Supabase Connection (توهان جون موڪليل چابيون سيٽ ڪيون ويون آهن)
+// Supabase Connection
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://zpglwxppgzdjirnvvlfg.supabase.co';
 const SUPABASE_KEY = process.env.SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZ2x3eHBwZ3pkamlybnZ2bGZnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTI3ODU1OSwiZXhwIjoyMTA0ODU0NTU5fQ.oV7-HhtrPXD0AhiDyA26SLqQfJWoMJS1lY5JO18TBWs';
 
@@ -173,7 +168,6 @@ async function startBroadcaster(config) {
 
   let currentStreamVar = 'v1';
 
-  // ٽيڪسٽ پائپ لائين (Dynamic Filter) - ان سان خالي فيلڊز جي ڪري FFmpeg Crash نه ٿيندو
   if (program) {
     videoFilter += `;[${currentStreamVar}]drawtext=text='${program}':x=30:y=30:fontsize=32:fontcolor=white:box=1:boxcolor=black@0.6:boxborderw=6:${fontOpt}[v_prg]`;
     currentStreamVar = 'v_prg';
@@ -238,7 +232,7 @@ async function startBroadcaster(config) {
       ffmpegProcess.stderr.on('data', (data) => {
         const str = data.toString();
         if (str.includes('Error') || str.includes('failed') || str.includes('Invalid')) {
-          console.error(`[FFmpeg Error]: ${str.trim()}`);
+          console.error(`[FFmpeg Log]: ${str.trim()}`);
         }
       });
 
@@ -293,7 +287,7 @@ function stopBroadcaster() {
 
 setInterval(checkDatabaseState, 2000);
 
-// Ping loop for host availability
+// Self Ping Loop - ڪلاؤڊ سرور کي سمهڻ (Sleep) کان بچائڻ لاءِ
 setInterval(() => {
   http.get(`http://localhost:${PORT}`, () => {}).on('error', () => {});
 }, 3 * 60 * 1000);
@@ -304,4 +298,5 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.listen(PORT, () => console.log(`Server listening on Port ${PORT}`));
+// Port Binding Update: 0.0.0.0 شامل ڪئي وئي آهي
+app.listen(PORT, '0.0.0.0', () => console.log(`Server listening on Port ${PORT}`));
