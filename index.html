@@ -108,20 +108,23 @@
     let isEditing = false;
     let editTimeout = null;
 
-    // input ۾ ٽائپ ڪرڻ وقت auto-refresh کي رٿيل وئيسٽ موڊ ۾ آڻڻ
-    document.addEventListener('input', () => { 
-      isEditing = true; 
-      clearTimeout(editTimeout);
-      editTimeout = setTimeout(() => { isEditing = false; }, 8000); // 8 سيڪنڊن کانپوءِ ٻيهر اٽو اپڊيٽ هلايو
+    // input ۾ ٽائپ ڪرڻ وقت auto-refresh کي روڪڻ
+    document.addEventListener('input', (e) => {
+      if (e.target.tagName === 'INPUT') {
+        isEditing = true;
+        clearTimeout(editTimeout);
+        editTimeout = setTimeout(() => { isEditing = false; }, 10000); // 10 سيڪنڊن تائين ريفرش پوسٽ پون ٿيندو
+      }
     });
 
     async function loadData() {
       if (isEditing) return;
 
       const { data, error } = await db.from('stream_config').select('*').eq('id', 1).maybeSingle();
-      if(error || !data) return;
+      if (error || !data) return;
 
-      if (document.activeElement.tagName !== 'INPUT') {
+      // جيڪڏهن صارف هن وقت ڪنهن فيلڊ ۾ لکي نه رهيو آهي ته قدر اپڊيٽ ڪريو
+      if (!document.activeElement || document.activeElement.tagName !== 'INPUT') {
         document.getElementById('fbKey').value = data.fb_key || '';
         document.getElementById('ytKey').value = data.yt_key || '';
         document.getElementById('progName').value = data.program_name || '';
@@ -135,7 +138,7 @@
 
       currentLiveState = data.is_live || false;
       const badge = document.getElementById('liveStatusBadge');
-      if(currentLiveState) {
+      if (currentLiveState) {
         badge.className = "status-badge bg-danger";
         badge.innerText = "🔴 LIVE";
       } else {
@@ -146,20 +149,27 @@
 
     function renderPlaylist() {
       const container = document.getElementById('playlistContainer');
+      
+      // جيڪڏهن فوڪس ڪنهن انپٽ تي آهي ته Re-render نه ڪريو
+      if (document.activeElement && document.activeElement.classList.contains('playlist-input')) {
+        return;
+      }
+
       container.innerHTML = '';
       playlist.forEach((item, index) => {
-        container.innerHTML += `
-          <div class="input-group mb-2">
-            <span class="input-group-text bg-dark text-secondary border-secondary">Track ${index + 1}</span>
-            <input type="text" class="form-control bg-dark text-white border-secondary" value="${item.url || ''}" oninput="updatePlaylistUrl(${index}, this.value)">
-            <button class="btn btn-outline-danger" onclick="removePlaylistItem(${index})">❌</button>
-          </div>
+        const div = document.createElement('div');
+        div.className = 'input-group mb-2';
+        div.innerHTML = `
+          <span class="input-group-text bg-dark text-secondary border-secondary">Track ${index + 1}</span>
+          <input type="text" class="form-control bg-dark text-white border-secondary playlist-input" value="${item.url || ''}" oninput="updatePlaylistUrl(${index}, this.value)">
+          <button class="btn btn-outline-danger" onclick="removePlaylistItem(${index})">❌</button>
         `;
+        container.appendChild(div);
       });
     }
 
     function updatePlaylistUrl(index, value) {
-      if(!playlist[index]) playlist[index] = {};
+      if (!playlist[index]) playlist[index] = {};
       playlist[index].url = value;
     }
 
@@ -209,13 +219,15 @@
 
     async function toggleLive(status) {
       currentLiveState = status;
-      // update() استعمال ڪيو ويو آهي ته جيئن ٻي سيٽنگس مٽجي نه وڃن
-      const { error } = await db.from('stream_config').update({ 
+      
+      // Upsert استعمال ڪريو ته جيئن جيڪڏهن ID 1 موجود ناهي ته به اپڊيٽ يا ڪريئيٽ ٿي وڃي
+      const { error } = await db.from('stream_config').upsert({ 
+        id: 1,
         is_live: status, 
         restart_trigger: Date.now() 
-      }).eq('id', 1);
+      }, { onConflict: 'id' });
 
-      if(error) alert("Error: " + error.message);
+      if (error) alert("Error: " + error.message);
       else {
         alert(status ? "لائيو اسٽريم شروع ڪئي وئي!" : "اسٽريم بند ڪئي وئي!");
       }
@@ -224,14 +236,16 @@
     }
 
     async function triggerManualSwitch() {
-      const { error } = await db.from('stream_config').update({ 
+      const { error } = await db.from('stream_config').upsert({ 
+        id: 1,
         restart_trigger: Date.now() 
-      }).eq('id', 1);
+      }, { onConflict: 'id' });
 
-      if(error) alert("Error: " + error.message);
+      if (error) alert("Error: " + error.message);
       else alert('ٽريڪ مٽائڻ جو سگنل موڪليو ويو!');
     }
 
+    // شروعاتي لوڊ
     loadData();
     setInterval(loadData, 5000);
   </script>
