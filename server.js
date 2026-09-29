@@ -24,7 +24,7 @@ let isBusySwitching = false;
 
 const FONT_PATH = path.join(__dirname, 'sindhi.ttf');
 
-console.log("🚀 Live Studio Engine v3.0 (Facebook Optimized) Started!");
+console.log("🚀 Live Studio Engine v3.1 (Stable & Fixed) Started!");
 
 // Text Escaping for FFmpeg Drawtext
 function sanitizeText(text) {
@@ -231,10 +231,10 @@ async function startBroadcaster(config) {
     '-flvflags', 'no_duration_filesize'
   ];
 
-  // Output targets
+  // Output targets (Tee filter with escaped colons for multi-stream & direct output for single stream)
   if (fbTarget && ytTarget) {
-    const escFb = fbTarget.replace(/:/g, '\\:');
-    const escYt = ytTarget.replace(/:/g, '\\:');
+    const escFb = fbTarget.replace(/\\/g, '\\\\').replace(/:/g, '\\:');
+    const escYt = ytTarget.replace(/\\/g, '\\\\').replace(/:/g, '\\:');
     ffmpegArgs.push('-f', 'tee', `[f=flv:onfail=ignore]${escFb}|[f=flv:onfail=ignore]${escYt}`);
   } else if (fbTarget) {
     ffmpegArgs.push('-f', 'flv', fbTarget);
