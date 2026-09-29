@@ -3,95 +3,160 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Studio Engine V2 Panel</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <title>Live Studio Control Panel</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <style>
-    body { background-color: #0f172a; color: #f8fafc; font-family: system-ui, -apple-system, sans-serif; }
-    .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; color: #fff; }
-    .btn-live { background-color: #ef4444; color: white; font-weight: bold; }
-    .btn-live:hover { background-color: #dc2626; }
-    .btn-stop { background-color: #64748b; color: white; }
-    .status-badge { font-size: 0.9rem; padding: 6px 14px; border-radius: 20px; }
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding-bottom: 50px;
+    }
+    .card {
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    }
+    .card-header {
+      background-color: #0f172a;
+      border-bottom: 1px solid #334155;
+      color: #38bdf8;
+      font-weight: bold;
+    }
+    .form-control, .form-select {
+      background-color: #0f172a;
+      border: 1px solid #475569;
+      color: #f8fafc;
+      border-radius: 8px;
+    }
+    .form-control:focus, .form-select:focus {
+      background-color: #0f172a;
+      color: #fff;
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 0.25rem rgba(56, 189, 248, 0.25);
+    }
+    .btn-live {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: white;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+    .btn-stop {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+    .badge-live {
+      background-color: #22c55e;
+      animation: pulse 1.5s infinite;
+    }
+    .badge-off {
+      background-color: #64748b;
+    }
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+    .playlist-item {
+      background-color: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
   </style>
 </head>
-<body class="p-3 p-md-4">
-  <div class="container" style="max-width: 900px;">
-    
-    <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary">
-      <h2>🚀 Live Studio Engine V2</h2>
-      <span id="liveStatusBadge" class="status-badge bg-secondary">چيڪنگ...</span>
-    </div>
+<body>
 
-    <!-- Live Control -->
-    <div class="card p-3 mb-4">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <div>
-          <h5 class="m-0">لائيو اسٽريم ڪنٽرول</h5>
-          <small class="text-secondary">اسٽريم آن يا آف ڪرڻ لاءِ هيٺيان بٽڻ دٻايو</small>
-        </div>
-        <div>
-          <button id="btnStart" class="btn btn-live me-2" onclick="toggleLive(true)">▶️ Go Live</button>
-          <button id="btnStop" class="btn btn-stop" onclick="toggleLive(false)">⏹️ Stop Stream</button>
-          <button class="btn btn-warning ms-2" onclick="triggerManualSwitch()">⏭️ Next Track</button>
-        </div>
+  <div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2><i class="fa-solid font-bold fa-tower-broadcast text-info me-2"></i> لائيو اسٽوڊيو ڪنٽرول پينل</h2>
+      <div>
+        <span id="liveStatusBadge" class="badge badge-off fs-6 p-2"><i class="fa-solid fa-circle me-1"></i> اسٽريم بند آهي</span>
       </div>
     </div>
 
-    <!-- Inputs Config -->
-    <div class="row g-3">
-      <!-- Keys -->
-      <div class="col-md-6">
-        <div class="card p-3 h-100">
-          <h5 class="card-title text-info mb-3">Stream Keys</h5>
-          <div class="mb-3">
-            <label class="form-label">Facebook Live Key/URL</label>
-            <input type="text" id="fbKey" class="form-control bg-dark text-white border-secondary" placeholder="FB Stream Key / RTMPS URL">
-          </div>
-          <div class="mb-3">
-            <label class="form-label">YouTube Live Key/URL</label>
-            <input type="text" id="ytKey" class="form-control bg-dark text-white border-secondary" placeholder="YT Stream Key">
-          </div>
-        </div>
+    <!-- Live Action Bar -->
+    <div class="card mb-4">
+      <div class="card-body d-flex justify-content-around align-items-center flex-wrap gap-3">
+        <button id="btnToggleLive" onclick="toggleLiveState()" class="btn btn-live btn-lg px-5 py-2">
+          <i class="fa-solid fa-play me-2"></i> ▶️ Go Live
+        </button>
+        <button onclick="triggerManualRestart()" class="btn btn-warning btn-lg px-4 text-dark font-bold">
+          <i class="fa-solid fa-rotate me-2"></i> اسٽريم ريسٽارٽ / سيف ڪريو
+        </button>
       </div>
+    </div>
 
-      <!-- Overlays -->
+    <div class="row g-4">
+      <!-- Right Column: Stream Keys & Graphics -->
       <div class="col-md-6">
-        <div class="card p-3 h-100">
-          <h5 class="card-title text-info mb-3">Branding & Text</h5>
-          <div class="mb-2">
-            <label class="form-label">Program Name (مٿيون عنوان)</label>
-            <input type="text" id="progName" class="form-control bg-dark text-white border-secondary">
-          </div>
-          <div class="mb-2">
-            <label class="form-label">Ticker Text (هيٺين پٽي)</label>
-            <input type="text" id="tickerText" class="form-control bg-dark text-white border-secondary">
-          </div>
-          <div class="row g-2">
-            <div class="col-8">
-              <label class="form-label">Logo PNG URL</label>
-              <input type="text" id="logoUrl" class="form-control bg-dark text-white border-secondary">
+        <div class="card mb-4">
+          <div class="card-header"><i class="fa-solid fa-key me-2"></i> اسٽريمنگ ڪيز (Destination Keys)</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label"><i class="fa-brands fa-facebook text-primary me-1"></i> Facebook Stream Key / RTMPS URL</label>
+              <input type="text" id="fbKey" class="form-control" placeholder="rtmps://live-api-s.facebook.com:443/rtmp/FB-XXXXX">
             </div>
-            <div class="col-4">
-              <label class="form-label">Size (px)</label>
-              <input type="number" id="logoSize" class="form-control bg-dark text-white border-secondary" value="120">
+            <div class="mb-3">
+              <label class="form-label"><i class="fa-brands fa-youtube text-danger me-1"></i> YouTube Stream Key / RTMP URL</label>
+              <input type="text" id="ytKey" class="form-control" placeholder="rtmp://a.rtmp.youtube.com/live2/XXXX-XXXX">
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Playlist Manager -->
-      <div class="col-12">
-        <div class="card p-3">
-          <h5 class="card-title text-info mb-3">Playlist Links (Direct MP4 URLs)</h5>
-          <div id="playlistContainer"></div>
-          <button class="btn btn-outline-info btn-sm mt-2" onclick="addPlaylistItem()">+ Add Video Link</button>
+        <div class="card">
+          <div class="card-header"><i class="fa-solid fa-wand-magic-sparkles me-2"></i> وڊيو اوورلي ۽ ٽيڪسٽ سيٽنگس</div>
+          <div class="card-body">
+            <div class="mb-3">
+              <label class="form-label">پروگرام جو نالو / ٽائيٽل (Program Title)</label>
+              <input type="text" id="programName" class="form-control" placeholder="مثال: لائيو پروگرام">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">هيٺين ٽيڪر پٽي (Ticker Scroll Text)</label>
+              <input type="text" id="tickerText" class="form-control" placeholder="لائيو نيوز پٽي...">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">لوگو لنڪ (Logo Image Direct URL)</label>
+              <input type="text" id="logoUrl" class="form-control" placeholder="https://domain.com/logo.png">
+            </div>
+            <div class="row">
+              <div class="col-6 mb-3">
+                <label class="form-label">لوگو جي سائيز</label>
+                <input type="number" id="logoSize" class="form-control" value="120">
+              </div>
+              <div class="col-6 mb-3">
+                <label class="form-label">لوگو جي جڳهه</label>
+                <select id="logoPosition" class="form-select">
+                  <option value="top-right">مٿي ساڄي (Top Right)</option>
+                  <option value="top-left">مٿي باٻي (Top Left)</option>
+                  <option value="bottom-right">هيٺ ساڄي (Bottom Right)</option>
+                  <option value="bottom-left">هيٺ باٻي (Bottom Left)</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="col-12 text-end">
-        <button id="btnSave" class="btn btn-success btn-lg px-5" onclick="saveConfiguration()">💾 Save & Apply Settings</button>
+      <!-- Left Column: Playlist Management -->
+      <div class="col-md-6">
+        <div class="card h-100">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fa-solid fa-list-check me-2"></i> پلي لسٽ (MP4 Direct Links)</span>
+            <button onclick="addPlaylistItem()" class="btn btn-sm btn-info text-white"><i class="fa-solid fa-plus me-1"></i> لنڪ جوڙيو</button>
+          </div>
+          <div class="card-body">
+            <p class="text-muted small mb-3">وڊيوز هڪ پوري ٿيڻ کان پوءِ آٽوميٽڪ ٻي وڊيو ڏانهن شفٽ ٿي وينديون.</p>
+            <div id="playlistContainer"></div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -100,154 +165,137 @@
     const SUPABASE_URL = 'https://zpglwxppgzdjirnvvlfg.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpwZ2x3eHBwZ3pkamlybnZ2bGZnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTI3ODU1OSwiZXhwIjoyMTA0ODU0NTU5fQ.oV7-HhtrPXD0AhiDyA26SLqQfJWoMJS1lY5JO18TBWs';
     
-    const { createClient } = supabase;
-    const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let playlist = [];
-    let currentLiveState = false;
-    let isEditing = false;
-    let editTimeout = null;
+    let isLiveState = false;
+    let localPlaylist = [];
+    let isUserEditing = false;
 
-    // input ۾ ٽائپ ڪرڻ وقت auto-refresh کي روڪڻ
-    document.addEventListener('input', (e) => {
-      if (e.target.tagName === 'INPUT') {
-        isEditing = true;
-        clearTimeout(editTimeout);
-        editTimeout = setTimeout(() => { isEditing = false; }, 10000); // 10 سيڪنڊن تائين ريفرش پوسٽ پون ٿيندو
+    // Track when user is actively inputting text
+    document.addEventListener('focusin', (e) => {
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
+        isUserEditing = true;
       }
     });
 
-    async function loadData() {
-      if (isEditing) return;
+    document.addEventListener('focusout', (e) => {
+      if (['INPUT', 'SELECT', 'TEXTAREA'].includes(e.target.tagName)) {
+        setTimeout(() => { isUserEditing = false; }, 1000);
+      }
+    });
 
-      const { data, error } = await db.from('stream_config').select('*').eq('id', 1).maybeSingle();
+    async function loadConfiguration() {
+      if (isUserEditing) return; // Prevent overwriting user input while typing
+
+      const { data, error } = await db.from('stream_config').select('*').eq('id', 1).single();
       if (error || !data) return;
 
-      // جيڪڏهن صارف هن وقت ڪنهن فيلڊ ۾ لکي نه رهيو آهي ته قدر اپڊيٽ ڪريو
-      if (!document.activeElement || document.activeElement.tagName !== 'INPUT') {
+      isLiveState = data.is_live;
+      updateUIStatus(data.is_live);
+
+      if (!isUserEditing) {
         document.getElementById('fbKey').value = data.fb_key || '';
         document.getElementById('ytKey').value = data.yt_key || '';
-        document.getElementById('progName').value = data.program_name || '';
+        document.getElementById('programName').value = data.program_name || '';
         document.getElementById('tickerText').value = data.ticker_text || '';
         document.getElementById('logoUrl').value = data.logo_url || '';
-        document.getElementById('logoSize').value = data.logo_size || '120';
-        
-        playlist = Array.isArray(data.playlist) ? data.playlist : [];
-        renderPlaylist();
-      }
+        document.getElementById('logoSize').value = data.logo_size || 120;
+        document.getElementById('logoPosition').value = data.logo_position || 'top-right';
 
-      currentLiveState = data.is_live || false;
-      const badge = document.getElementById('liveStatusBadge');
-      if (currentLiveState) {
-        badge.className = "status-badge bg-danger";
-        badge.innerText = "🔴 LIVE";
-      } else {
-        badge.className = "status-badge bg-secondary";
-        badge.innerText = "⚪ OFF";
+        if (Array.isArray(data.playlist) && data.playlist.length > 0) {
+          localPlaylist = data.playlist;
+        } else {
+          localPlaylist = [{ url: '' }];
+        }
+        renderPlaylistUI();
       }
     }
 
-    function renderPlaylist() {
-      const container = document.getElementById('playlistContainer');
-      
-      // جيڪڏهن فوڪس ڪنهن انپٽ تي آهي ته Re-render نه ڪريو
-      if (document.activeElement && document.activeElement.classList.contains('playlist-input')) {
-        return;
-      }
+    function updateUIStatus(isLive) {
+      const badge = document.getElementById('liveStatusBadge');
+      const btn = document.getElementById('btnToggleLive');
 
+      if (isLive) {
+        badge.className = 'badge badge-live fs-6 p-2';
+        badge.innerHTML = '<i class="fa-solid fa-broadcast-tower me-1"></i> لائيو نشر ٿي رهيو آهي';
+        btn.className = 'btn btn-stop btn-lg px-5 py-2';
+        btn.innerHTML = '<i class="fa-solid fa-stop me-2"></i> ⏹️ Stop Live';
+      } else {
+        badge.className = 'badge badge-off fs-6 p-2';
+        badge.innerHTML = '<i class="fa-solid fa-circle me-1"></i> اسٽريم بند آهي';
+        btn.className = 'btn btn-live btn-lg px-5 py-2';
+        btn.innerHTML = '<i class="fa-solid fa-play me-2"></i> ▶️ Go Live';
+      }
+    }
+
+    function renderPlaylistUI() {
+      const container = document.getElementById('playlistContainer');
       container.innerHTML = '';
-      playlist.forEach((item, index) => {
+
+      localPlaylist.forEach((item, index) => {
         const div = document.createElement('div');
-        div.className = 'input-group mb-2';
+        div.className = 'playlist-item d-flex align-items-center gap-2';
         div.innerHTML = `
-          <span class="input-group-text bg-dark text-secondary border-secondary">Track ${index + 1}</span>
-          <input type="text" class="form-control bg-dark text-white border-secondary playlist-input" value="${item.url || ''}" oninput="updatePlaylistUrl(${index}, this.value)">
-          <button class="btn btn-outline-danger" onclick="removePlaylistItem(${index})">❌</button>
+          <span class="text-info font-bold me-1">#${index + 1}</span>
+          <input type="text" class="form-control form-control-sm" value="${item.url || ''}" onchange="updatePlaylistUrl(${index}, this.value)" placeholder="https://direct-video-url.mp4">
+          <button class="btn btn-sm btn-outline-danger" onclick="removePlaylistItem(${index})"><i class="fa-solid fa-trash"></i></button>
         `;
         container.appendChild(div);
       });
     }
 
-    function updatePlaylistUrl(index, value) {
-      if (!playlist[index]) playlist[index] = {};
-      playlist[index].url = value;
-    }
-
     function addPlaylistItem() {
-      isEditing = true;
-      playlist.push({ url: '' });
-      renderPlaylist();
+      localPlaylist.push({ url: '' });
+      renderPlaylistUI();
     }
 
-    function removePlaylistItem(idx) {
-      isEditing = true;
-      playlist.splice(idx, 1);
-      renderPlaylist();
+    function removePlaylistItem(index) {
+      if (localPlaylist.length <= 1) return;
+      localPlaylist.splice(index, 1);
+      renderPlaylistUI();
     }
 
-    async function saveConfiguration() {
-      const btnSave = document.getElementById('btnSave');
-      btnSave.innerText = "⏳ Saving...";
-      btnSave.disabled = true;
+    function updatePlaylistUrl(index, value) {
+      localPlaylist[index].url = value.trim();
+    }
 
-      const updateData = {
-        id: 1,
+    async function saveConfigToDatabase(newLiveStatus = null) {
+      const isLive = (newLiveStatus !== null) ? newLiveStatus : isLiveState;
+      
+      const payload = {
+        is_live: isLive,
         fb_key: document.getElementById('fbKey').value.trim(),
         yt_key: document.getElementById('ytKey').value.trim(),
-        program_name: document.getElementById('progName').value,
-        ticker_text: document.getElementById('tickerText').value,
-        logo_url: document.getElementById('logoUrl').value,
-        logo_size: document.getElementById('logoSize').value,
-        playlist: playlist,
-        is_live: currentLiveState,
+        program_name: document.getElementById('programName').value.trim(),
+        ticker_text: document.getElementById('tickerText').value.trim(),
+        logo_url: document.getElementById('logoUrl').value.trim(),
+        logo_size: parseInt(document.getElementById('logoSize').value) || 120,
+        logo_position: document.getElementById('logoPosition').value,
+        playlist: localPlaylist.filter(p => p.url && p.url.trim() !== ''),
         restart_trigger: Date.now()
       };
 
-      const { error } = await db.from('stream_config').upsert(updateData);
-
-      btnSave.innerText = "💾 Save & Apply Settings";
-      btnSave.disabled = false;
-
+      const { error } = await db.from('stream_config').update(payload).eq('id', 1);
       if (error) {
-        alert("غلطي! ڊيٽا محفوظ نه ٿي سگهي: " + error.message);
+        alert("سيٽنگس سيف ڪرڻ ۾ ايرر آيو!");
       } else {
-        alert('سيٽنگس مڪمل محفوظ ٿي ويون!');
-        isEditing = false;
-        loadData();
+        isLiveState = isLive;
+        updateUIStatus(isLive);
       }
     }
 
-    async function toggleLive(status) {
-      currentLiveState = status;
-      
-      // Upsert استعمال ڪريو ته جيئن جيڪڏهن ID 1 موجود ناهي ته به اپڊيٽ يا ڪريئيٽ ٿي وڃي
-      const { error } = await db.from('stream_config').upsert({ 
-        id: 1,
-        is_live: status, 
-        restart_trigger: Date.now() 
-      }, { onConflict: 'id' });
-
-      if (error) alert("Error: " + error.message);
-      else {
-        alert(status ? "لائيو اسٽريم شروع ڪئي وئي!" : "اسٽريم بند ڪئي وئي!");
-      }
-      isEditing = false;
-      loadData();
+    function toggleLiveState() {
+      saveConfigToDatabase(!isLiveState);
     }
 
-    async function triggerManualSwitch() {
-      const { error } = await db.from('stream_config').upsert({ 
-        id: 1,
-        restart_trigger: Date.now() 
-      }, { onConflict: 'id' });
-
-      if (error) alert("Error: " + error.message);
-      else alert('ٽريڪ مٽائڻ جو سگنل موڪليو ويو!');
+    function triggerManualRestart() {
+      saveConfigToDatabase(isLiveState);
+      alert("سيٽنگس ڪاميابي سان سيف ڪيون ويون آهن ۽ اسٽريم ريلوڊ ڪئي وئي آهي!");
     }
 
-    // شروعاتي لوڊ
-    loadData();
-    setInterval(loadData, 5000);
+    // Initial Load & Polling setup
+    loadConfiguration();
+    setInterval(loadConfiguration, 5000);
   </script>
 </body>
 </html>
