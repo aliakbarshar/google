@@ -1,2 +1,10 @@
-[pkgs]
-apt = ["ffmpeg"]
+{
+  "pkgs": {
+    "apt": [
+      "ffmpeg",
+      "libatomic1",
+      "fontconfig",
+      "fonts-dejavu-core"
+    ]
+  }
+}
