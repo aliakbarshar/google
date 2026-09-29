@@ -24,7 +24,7 @@ let isBusySwitching = false;
 
 const FONT_PATH = path.join(__dirname, 'sindhi.ttf');
 
-console.log("🚀 Live Studio Engine v3.2 (Production Stable) Started!");
+console.log("🚀 Live Studio Engine v3.3 (Stable Direct FLV) Started!");
 
 // Text Escaping for FFmpeg Drawtext
 function sanitizeText(text) {
@@ -231,9 +231,8 @@ async function startBroadcaster(config) {
     '-flvflags', 'no_duration_filesize'
   ];
 
-  // Stable Output Handling (Avoids Tee parsing crashes)
+  // Output targets (Direct FLV Streaming - No Tee Filter Bug)
   if (fbTarget && ytTarget) {
-    // Split output cleanly into two direct FLV output definitions
     ffmpegArgs.push('-f', 'flv', fbTarget);
     ffmpegArgs.push('-map', '[outv]', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'veryfast', '-b:v', '2500k', '-c:a', 'aac', '-f', 'flv', ytTarget);
   } else if (fbTarget) {
