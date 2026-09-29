@@ -106,10 +106,14 @@
     let playlist = [];
     let currentLiveState = false;
     let isEditing = false;
+    let editTimeout = null;
 
-    // input ۾ ٽائپ ڪرڻ وقت auto-refresh کي روڪڻ لاءِ
-    document.addEventListener('input', () => { isEditing = true; });
-    document.addEventListener('focusin', () => { isEditing = true; });
+    // input ۾ ٽائپ ڪرڻ وقت auto-refresh کي رٿيل وئيسٽ موڊ ۾ آڻڻ
+    document.addEventListener('input', () => { 
+      isEditing = true; 
+      clearTimeout(editTimeout);
+      editTimeout = setTimeout(() => { isEditing = false; }, 8000); // 8 سيڪنڊن کانپوءِ ٻيهر اٽو اپڊيٽ هلايو
+    });
 
     async function loadData() {
       if (isEditing) return;
@@ -117,12 +121,17 @@
       const { data, error } = await db.from('stream_config').select('*').eq('id', 1).maybeSingle();
       if(error || !data) return;
 
-      document.getElementById('fbKey').value = data.fb_key || '';
-      document.getElementById('ytKey').value = data.yt_key || '';
-      document.getElementById('progName').value = data.program_name || '';
-      document.getElementById('tickerText').value = data.ticker_text || '';
-      document.getElementById('logoUrl').value = data.logo_url || '';
-      document.getElementById('logoSize').value = data.logo_size || '120';
+      if (document.activeElement.tagName !== 'INPUT') {
+        document.getElementById('fbKey').value = data.fb_key || '';
+        document.getElementById('ytKey').value = data.yt_key || '';
+        document.getElementById('progName').value = data.program_name || '';
+        document.getElementById('tickerText').value = data.ticker_text || '';
+        document.getElementById('logoUrl').value = data.logo_url || '';
+        document.getElementById('logoSize').value = data.logo_size || '120';
+        
+        playlist = Array.isArray(data.playlist) ? data.playlist : [];
+        renderPlaylist();
+      }
 
       currentLiveState = data.is_live || false;
       const badge = document.getElementById('liveStatusBadge');
@@ -133,9 +142,6 @@
         badge.className = "status-badge bg-secondary";
         badge.innerText = "⚪ OFF";
       }
-
-      playlist = Array.isArray(data.playlist) ? data.playlist : [];
-      renderPlaylist();
     }
 
     function renderPlaylist() {
@@ -153,7 +159,6 @@
     }
 
     function updatePlaylistUrl(index, value) {
-      isEditing = true;
       if(!playlist[index]) playlist[index] = {};
       playlist[index].url = value;
     }
@@ -204,7 +209,12 @@
 
     async function toggleLive(status) {
       currentLiveState = status;
-      const { error } = await db.from('stream_config').upsert({ id: 1, is_live: status, restart_trigger: Date.now() });
+      // update() استعمال ڪيو ويو آهي ته جيئن ٻي سيٽنگس مٽجي نه وڃن
+      const { error } = await db.from('stream_config').update({ 
+        is_live: status, 
+        restart_trigger: Date.now() 
+      }).eq('id', 1);
+
       if(error) alert("Error: " + error.message);
       else {
         alert(status ? "لائيو اسٽريم شروع ڪئي وئي!" : "اسٽريم بند ڪئي وئي!");
@@ -214,7 +224,10 @@
     }
 
     async function triggerManualSwitch() {
-      const { error } = await db.from('stream_config').upsert({ id: 1, restart_trigger: Date.now() });
+      const { error } = await db.from('stream_config').update({ 
+        restart_trigger: Date.now() 
+      }).eq('id', 1);
+
       if(error) alert("Error: " + error.message);
       else alert('ٽريڪ مٽائڻ جو سگنل موڪليو ويو!');
     }
